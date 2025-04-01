@@ -1,4 +1,4 @@
-import { Repository, EntityTarget, FindManyOptions, FindOneOptions, DeepPartial, FindOptionsWhere } from 'typeorm';
+import { Repository, EntityTarget, FindManyOptions, FindOneOptions, DeepPartial, FindOptionsWhere, ObjectLiteral } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { PaginationParams, PaginatedResult } from '../interfaces/response.interface';
 import { NotFoundError } from '../utils/error-handler';
@@ -6,7 +6,7 @@ import { NotFoundError } from '../utils/error-handler';
 /**
  * Repositorio base genérico para operaciones comunes de acceso a datos
  */
-export abstract class BaseRepository<T> {
+export abstract class BaseRepository<T extends ObjectLiteral> {
   protected repository: Repository<T>;
 
   constructor(entity: EntityTarget<T>) {
@@ -122,9 +122,8 @@ export abstract class BaseRepository<T> {
   async delete(id: number | string, entityName: string): Promise<boolean> {
     await this.findByIdOrFail(id, entityName);
     const result = await this.repository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
-
   /**
    * Cuenta el número de entidades que coinciden con las condiciones
    * @param conditions Condiciones de búsqueda

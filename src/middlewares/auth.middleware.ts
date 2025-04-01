@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config/environment';
 import { UnauthorizedError } from '../utils/error-handler';
-import { UserRepository } from '../repositories/user.repository';
 import { AppDataSource } from '../config/database';
 
 // Extender interface de Request para incluir usuario

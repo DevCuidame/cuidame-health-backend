@@ -1,9 +1,9 @@
-import bcrypt from 'bcrypt';
 import { UserRepository } from '../repositories/user.repository';
 import { User } from '../models/user.model';
 import { UserFilterOptions } from '../interfaces/user.interface';
 import { PaginationParams, PaginatedResult } from '../interfaces/response.interface';
 import { NotFoundError, BadRequestError, UnauthorizedError } from '../utils/error-handler';
+import { PasswordService } from '../utils/password.util';
 
 export class UserService {
   private userRepository: UserRepository;
@@ -85,15 +85,14 @@ export class UserService {
       throw new NotFoundError('Usuario no encontrado o sin contraseña configurada');
     }
     
-    // Verificar contraseña actual
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    // Verificar contraseña actual usando el sistema híbrido
+    const isPasswordValid = PasswordService.verifyPassword(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Contraseña actual incorrecta');
     }
     
-    // Generar hash de la nueva contraseña
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    // Generar hash de la nueva contraseña usando el método seguro
+    const hashedPassword = PasswordService.hashPassword(newPassword);
     
     // Actualizar contraseña
     return await this.userRepository.update(userId, {

@@ -69,8 +69,8 @@ export class User {
   @Column({ nullable: true, type: 'text' })
   imagebs64?: string;
 
-  @Column({ nullable: true })
-  path?: string;
+  // @Column({ nullable: true })
+  // path?: string;
 
   // Relaciones
   @OneToMany(() => UserRole, userRole => userRole.user)

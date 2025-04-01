@@ -60,7 +60,7 @@ export class MedicalInfoRepository {
     }
     
     const result = await this.allergyRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para condiciones médicas
@@ -129,7 +129,7 @@ export class MedicalInfoRepository {
     }
     
     const result = await this.backgroundRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para antecedentes familiares
@@ -169,7 +169,7 @@ export class MedicalInfoRepository {
     }
     
     const result = await this.familyBackgroundRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para vacunas
@@ -209,7 +209,7 @@ export class MedicalInfoRepository {
     }
     
     const result = await this.vaccineRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para obtener todo el historial médico de un paciente

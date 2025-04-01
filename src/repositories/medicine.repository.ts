@@ -60,7 +60,7 @@ export class MedicineRepository {
     }
     
     const result = await this.medicineRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para archivos de medicamentos
@@ -100,7 +100,7 @@ export class MedicineRepository {
     }
     
     const result = await this.fileMedicineRepository.delete(id);
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   // Métodos para historial de cambios

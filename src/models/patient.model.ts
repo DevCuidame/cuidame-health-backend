@@ -2,16 +2,10 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { User } from './user.model';
 import { Allergy } from './allergy.model';
 import { Condition } from './condition.model';
-import { FamilyBackground } from './family-background.model';
-import { Background } from './background.model';
-import { HeartRate } from './heart-rate.model';
-import { BloodPressure } from './blood-pressure.model';
-import { BloodGlucose } from './blood-glucose.model';
-import { BloodOxygen } from './blood-oxygen.model';
-import { RespiratoryRate } from './respiratory-rate.model';
-import { Vaccine } from './vaccine.model';
+import { Background, FamilyBackground, Vaccine } from './background.model';
+// Importar todas las clases desde un solo archivo
+import { HeartRate, BloodPressure, BloodGlucose, BloodOxygen, RespiratoryRate } from './vitals.models';
 import { ControlMedicine } from './control-medicine.model';
-
 @Entity('pacientes')
 export class Patient {
   @PrimaryGeneratedColumn('increment')

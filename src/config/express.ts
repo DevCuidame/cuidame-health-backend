@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import config from './environment';
-import { errorMiddleware } from '../middleware/error.middleware';
+import { errorMiddleware } from '../middlewares/error.middleware';
 import path from 'path';
 
 export const setupExpress = (): Application => {

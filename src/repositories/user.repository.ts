@@ -169,7 +169,7 @@ export class UserRepository extends BaseRepository<User> {
       role_id: roleId
     });
     
-    return result.affected !== undefined && result.affected > 0;
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
   /**
@@ -179,7 +179,7 @@ export class UserRepository extends BaseRepository<User> {
    * @returns El usuario actualizado
    */
   async updateSessionToken(userId: number, token: string | null): Promise<User> {
-    await this.repository.update(userId, { session_token: token });
+    await this.repository.update(userId, { session_token: token } as any);
     const user = await this.findById(userId);
     
     if (!user) {

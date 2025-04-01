@@ -85,7 +85,7 @@ export class AuthController {
       
       // Verificar que las contraseñas coincidan
       if (password !== confirmPassword) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Las contraseñas no coinciden',
           timestamp: new Date().toISOString()
@@ -136,7 +136,7 @@ export class AuthController {
       const userId = req.user?.id;
       
       if (!userId) {
-        return res.status(200).json({
+        res.status(200).json({
           success: true,
           message: 'No hay sesión activa',
           timestamp: new Date().toISOString()
