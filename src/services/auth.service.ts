@@ -6,6 +6,8 @@ import {
   ILoginCredentials,
   JwtPayload,
   IRegisterData,
+  RefreshTokenPayload,
+  IRefreshTokenData
 } from '../interfaces/auth.interface';
 import { User } from '../models/user.model';
 import {
@@ -78,12 +80,17 @@ export class AuthService {
 
     // Generar token JWT
     const token = this.generateToken(user);
+    
+    // Generar refresh token
+    const refreshToken = this.generateRefreshToken(user);
 
     // Actualizar token de sesión en la base de datos
     await this.userRepository.updateSessionToken(user.id, token);
 
-
     const patientCount = await this.patientRepository.count({
+      where: { a_cargo_id: user.id }
+    });
+    const cared_persons = await this.patientRepository.findAll({
       where: { a_cargo_id: user.id }
     });
 
@@ -105,18 +112,90 @@ export class AuthService {
         imagebs64: user.imagebs64,
       },
       roles: user.userRoles?.map((ur) => ur.role.name) || [],
-      access_token: token as any,
-      refresh_token: token as any,
+      access_token: token,
+      refresh_token: refreshToken,
       patientCount: patientCount,
+      cared_persons: cared_persons ,
     };
-    console.log("🚀 ~ AuthService ~ login ~ userData:", userData)
 
     return {
       success: true,
       message,
       data: userData,
       token,
+      refresh_token: refreshToken
     };
+  }
+
+  /**
+   * Refrescar token de acceso usando un refresh token
+   * @param refreshTokenData Datos del refresh token
+   * @returns Nuevo token de acceso
+   */
+  async refreshToken(refreshTokenData: IRefreshTokenData): Promise<IAuthResponse> {
+    const { refresh_token } = refreshTokenData;
+    
+    try {
+      // Verificar refresh token
+      const decoded = jwt.verify(refresh_token, config.jwt.secret) as RefreshTokenPayload;
+      
+      // Validar que sea un refresh token
+      if (decoded.type !== 'refresh') {
+        throw new UnauthorizedError('Token inválido');
+      }
+      
+      // Buscar usuario
+      const user = await this.userRepository.findById(decoded.id);
+      
+      if (!user) {
+        throw new UnauthorizedError('Usuario no encontrado');
+      }
+      
+      // Generar nuevo token de acceso
+      const newAccessToken = this.generateToken(user);
+      
+      // Generar nuevo refresh token (opcional, para implementar rotación de tokens)
+      const newRefreshToken = this.generateRefreshToken(user);
+      
+      // Actualizar token de sesión en la base de datos (opcional)
+      await this.userRepository.updateSessionToken(user.id, newAccessToken);
+      
+      return {
+        success: true,
+        message: 'Token renovado exitosamente',
+        data: {
+          access_token: newAccessToken,
+          refresh_token: newRefreshToken
+        },
+        token: newAccessToken,
+        refresh_token: newRefreshToken
+      };
+    } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new UnauthorizedError('Refresh token inválido o expirado');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Generar refresh token JWT
+   * @param user Usuario
+   * @returns Refresh token JWT
+   */
+  private generateRefreshToken(user: User): string {
+    const payload: RefreshTokenPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.userRoles?.[0]?.role.name || 'user',
+      type: 'refresh',
+      token_version: 1, // Versión del token para invalidación masiva si es necesario
+    };
+
+    return jwt.sign(payload, config.jwt.secret, {
+      expiresIn: '7d', // El refresh token dura más tiempo
+    });
   }
 
   /**

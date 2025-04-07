@@ -22,6 +22,7 @@ interface Config {
   jwt: {
     secret: string;
     expiresIn: string;
+    refreshExpiresIn: string;
   };
   logging: {
     level: string;
@@ -51,6 +52,7 @@ const config: Config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'default_jwt_secret_key_change_in_production',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

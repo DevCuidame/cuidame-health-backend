@@ -22,6 +22,13 @@ router.post('/login', validateDto(LoginDto), authController.login);
 router.post('/register', validateDto(RegisterDto), authController.register);
 
 /**
+ * @route POST /api/auth/refresh-token
+ * @desc Refresh access token using a refresh token
+ * @access Public
+ */
+router.post('/refresh-token', authController.refreshToken);
+
+/**
  * @route POST /api/auth/forgot-password
  * @desc Request password reset
  * @access Public

@@ -33,6 +33,38 @@ export class AuthController {
   };
 
   /**
+   * Refrescar token de acceso
+   * @route POST /api/auth/refresh-token
+   */
+  refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { refresh_token } = req.body;
+      
+      if (!refresh_token) {
+        res.status(400).json({
+          success: false,
+          message: 'Refresh token no proporcionado',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+      
+      const result = await this.authService.refreshToken({ refresh_token });
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        data: result.data,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * Registrar un nuevo usuario
    * @route POST /api/auth/register
    */

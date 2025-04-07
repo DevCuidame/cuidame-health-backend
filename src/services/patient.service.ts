@@ -2,9 +2,17 @@ import { PatientRepository } from '../repositories/patient.repository';
 import { MedicalInfoRepository } from '../repositories/medical-info.repository';
 import { HealthRepository } from '../repositories/health.repository';
 import { Patient } from '../models/patient.model';
-import { PaginationParams, PaginatedResult } from '../interfaces/response.interface';
-import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/error-handler';
+import {
+  PaginationParams,
+  PaginatedResult,
+} from '../interfaces/response.interface';
+import {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} from '../utils/error-handler';
 import { CreatePatientDto, UpdatePatientDto } from '../dto/patient.dto';
+import { FileUploadService } from '../utils/file-upload.util';
 
 export class PatientService {
   private patientRepository: PatientRepository;
@@ -23,19 +31,55 @@ export class PatientService {
    * @param caregiverId ID del cuidador que crea el paciente
    * @returns Paciente creado
    */
-  async createPatient(patientData: CreatePatientDto, caregiverId: number): Promise<Patient> {
+  async createPatient( patientData: CreatePatientDto, caregiverId: number ): Promise<Patient> {
     // Generar un código único para el paciente
     const code = await this.patientRepository.generateUniqueCode();
-    
-    // Crear el paciente
+
+    // Extraer imagen base64 si existe
+    const imageBase64 = patientData.imagebs64;
+
+    // Crear el paciente primero (sin la URL de la foto)
     const patient = await this.patientRepository.create({
       ...patientData,
       code,
       a_cargo_id: caregiverId,
+      photourl: '',
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     });
-    
+
+    // Si hay imagen, guardarla y actualizar la URL de la foto
+    let photoUrl = '';
+    if (imageBase64) {
+      try {
+        // Guardar imagen usando el servicio de utilidad
+        photoUrl = await FileUploadService.saveBase64Image(
+          imageBase64,
+          'patients', // Carpeta: patients
+          `patient_${patient.id}`, // Subcarpeta: patient_123
+          'profile' // Nombre base: profile
+        );
+
+        if (photoUrl) {
+          // Actualizar la URL en la base de datos
+          await this.patientRepository.update(
+            patient.id,
+            {
+              photourl: photoUrl,
+              updated_at: new Date(),
+            },
+            'Paciente'
+          );
+
+          // Actualizar el objeto del paciente antes de devolverlo
+          patient.photourl = photoUrl;
+        }
+      } catch (error) {
+        console.error('Error al guardar imagen de paciente:', error);
+        // No fallamos el proceso completo si hay error en la imagen
+      }
+    }
+
     return patient;
   }
 
@@ -45,18 +89,23 @@ export class PatientService {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Paciente encontrado
    */
-  async getPatientById(patientId: number, caregiverId?: number): Promise<Patient> {
+  async getPatientById(
+    patientId: number,
+    caregiverId?: number
+  ): Promise<Patient> {
     const patient = await this.patientRepository.findById(patientId);
-    
+
     if (!patient) {
       throw new NotFoundError(`Paciente con ID ${patientId} no encontrado`);
     }
-    
+
     // Si se proporciona el ID del cuidador, verificar que tenga permisos
     if (caregiverId && patient.a_cargo_id !== caregiverId) {
-      throw new ForbiddenError('No tienes permiso para acceder a este paciente');
+      throw new ForbiddenError(
+        'No tienes permiso para acceder a este paciente'
+      );
     }
-    
+
     return patient;
   }
 
@@ -66,20 +115,25 @@ export class PatientService {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Todos los datos del paciente y su información médica
    */
-  async getPatientFullDetails(patientId: number, caregiverId?: number): Promise<any> {
+  async getPatientFullDetails(
+    patientId: number,
+    caregiverId?: number
+  ): Promise<any> {
     // Verificar permisos
     const patient = await this.getPatientById(patientId, caregiverId);
-    
+
     // Obtener información médica completa
-    const medicalInfo = await this.medicalInfoRepository.getAllMedicalInfo(patientId);
-    
+    const medicalInfo = await this.medicalInfoRepository.getAllMedicalInfo(
+      patientId
+    );
+
     // Obtener últimos signos vitales
     const latestVitals = await this.healthRepository.getLatestVitals(patientId);
-    
+
     return {
       ...patient,
       medicalInfo,
-      vitals: latestVitals
+      vitals: latestVitals,
     };
   }
 
@@ -98,8 +152,14 @@ export class PatientService {
    * @param caregiverId ID del cuidador (opcional)
    * @returns Lista de pacientes que coinciden con los criterios
    */
-  async searchPatients(search: string, caregiverId?: number): Promise<Patient[]> {
-    return await this.patientRepository.findBySearchCriteria(search, caregiverId);
+  async searchPatients(
+    search: string,
+    caregiverId?: number
+  ): Promise<Patient[]> {
+    return await this.patientRepository.findBySearchCriteria(
+      search,
+      caregiverId
+    );
   }
 
   /**
@@ -107,9 +167,11 @@ export class PatientService {
    * @param params Parámetros de paginación
    * @returns Resultado paginado de pacientes
    */
-  async getPatientsWithPagination(params: PaginationParams): Promise<PaginatedResult<Patient>> {
+  async getPatientsWithPagination(
+    params: PaginationParams
+  ): Promise<PaginatedResult<Patient>> {
     return await this.patientRepository.findWithPagination(params, {
-      relations: ['caregiver']
+      relations: ['caregiver'],
     });
   }
 
@@ -120,16 +182,24 @@ export class PatientService {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Paciente actualizado
    */
-  async updatePatient(patientId: number, patientData: UpdatePatientDto, caregiverId?: number): Promise<Patient> {
+  async updatePatient(
+    patientId: number,
+    patientData: UpdatePatientDto,
+    caregiverId?: number
+  ): Promise<Patient> {
     // Verificar permisos
     await this.getPatientById(patientId, caregiverId);
-    
+
     // Actualizar paciente
-    const updatedPatient = await this.patientRepository.update(patientId, {
-      ...patientData,
-      updated_at: new Date()
-    }, 'Paciente');
-    
+    const updatedPatient = await this.patientRepository.update(
+      patientId,
+      {
+        ...patientData,
+        updated_at: new Date(),
+      },
+      'Paciente'
+    );
+
     return updatedPatient;
   }
 
@@ -140,16 +210,38 @@ export class PatientService {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Paciente actualizado
    */
-  async updatePatientImage(patientId: number, imageData: string, caregiverId?: number): Promise<Patient> {
+
+  async updatePatientImage( patientId: number, imageData: string, caregiverId?: number ): Promise<Patient> {
     // Verificar permisos
-    await this.getPatientById(patientId, caregiverId);
-    
-    // Actualizar imagen
-    const updatedPatient = await this.patientRepository.update(patientId, {
-      imagebs64: imageData,
-      updated_at: new Date()
-    }, 'Paciente');
-    
+    const patient = await this.getPatientById(patientId, caregiverId);
+
+    // Verificar si existe una imagen previa y eliminarla
+    if (patient.photourl) {
+      await FileUploadService.deleteFile(patient.photourl);
+    }
+
+    // Guardar nueva imagen
+    let photoUrl = '';
+    if (imageData) {
+      photoUrl = await FileUploadService.saveBase64Image(
+        imageData,
+        'patients',
+        `patient_${patientId}`,
+        'profile'
+      );
+    }
+
+    // Actualizar imagen en la base de datos
+    const updatedPatient = await this.patientRepository.update(
+      patientId,
+      {
+        imagebs64: imageData,
+        photourl: photoUrl,
+        updated_at: new Date(),
+      },
+      'Paciente'
+    );
+
     return updatedPatient;
   }
 
@@ -159,20 +251,23 @@ export class PatientService {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Confirmación de eliminación
    */
-  async deletePatient(patientId: number, caregiverId?: number): Promise<{ success: boolean, message: string }> {
+  async deletePatient(
+    patientId: number,
+    caregiverId?: number
+  ): Promise<{ success: boolean; message: string }> {
     // Verificar permisos
     await this.getPatientById(patientId, caregiverId);
-    
+
     // Eliminar paciente
     const result = await this.patientRepository.delete(patientId, 'Paciente');
-    
+
     if (!result) {
       throw new BadRequestError('No se pudo eliminar el paciente');
     }
-    
+
     return {
       success: true,
-      message: 'Paciente eliminado correctamente'
+      message: 'Paciente eliminado correctamente',
     };
   }
 
@@ -182,7 +277,13 @@ export class PatientService {
    * @param caregiverId ID del cuidador
    * @returns True si el paciente pertenece al cuidador
    */
-  async verifyPatientBelongsToCaregiver(patientId: number, caregiverId: number): Promise<boolean> {
-    return await this.patientRepository.belongsToCaregiver(patientId, caregiverId);
+  async verifyPatientBelongsToCaregiver(
+    patientId: number,
+    caregiverId: number
+  ): Promise<boolean> {
+    return await this.patientRepository.belongsToCaregiver(
+      patientId,
+      caregiverId
+    );
   }
 }

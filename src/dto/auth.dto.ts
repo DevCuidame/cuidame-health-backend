@@ -74,3 +74,10 @@ export class ResetPasswordDto {
   @MinLength(6, { message: 'La confirmación de contraseña debe tener al menos 6 caracteres' })
   confirmPassword!: string;
 }
+
+
+export class RefreshTokenDto {
+  @IsNotEmpty({ message: 'El refresh token es requerido' })
+  @IsString({ message: 'El refresh token debe ser una cadena de texto' })
+  refresh_token!: string;
+}
