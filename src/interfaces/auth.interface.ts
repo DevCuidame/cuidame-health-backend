@@ -51,5 +51,22 @@ export interface ILoginCredentials {
     success: boolean;
     message: string;
     data?: any;
+    user?: any;
     token?: string;
+    refresh_token?: string;
   }
+
+  /**
+ * Interfaz para datos de refresh token
+ */
+export interface IRefreshTokenData {
+  refresh_token: string;
+}
+
+/**
+ * Payload extendido para refresh token
+ */
+export interface RefreshTokenPayload extends JwtPayload {
+  type: 'refresh';
+  token_version: number;
+}

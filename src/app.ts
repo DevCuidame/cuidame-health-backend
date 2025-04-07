@@ -36,8 +36,6 @@ const initializeApp = async (): Promise<void> => {
   try {
     await initializeDatabase();
     
-    // Cualquier otra inicialización necesaria se puede agregar aquí
-    
     logger.info('✅ Aplicación inicializada correctamente');
   } catch (error) {
     logger.error('❌ Error al inicializar la aplicación:', error);

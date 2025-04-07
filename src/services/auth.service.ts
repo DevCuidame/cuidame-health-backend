@@ -66,11 +66,6 @@ export class AuthService {
         },
         'Usuario'
       );
-
-      // Registrar la migración (opcional)
-      logger.info(
-        `Contraseña migrada para el usuario ${user.id} (${user.email})`
-      );
     }
 
     let message = 'Sesión iniciada exitosamente';
@@ -86,14 +81,17 @@ export class AuthService {
 
     // Crear objeto de respuesta
     const userData = {
-      id: user.id,
-      name: user.name,
-      lastname: user.lastname,
-      email: user.email,
-      verificado: user.verificado,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        lastname: user.lastname,
+        verificado: user.verificado,
+      },
       // Agregar roles si están disponibles
       roles: user.userRoles?.map((ur) => ur.role.name) || [],
       access_token: token as any,
+      refresh_token: token as any,
     };
 
     return {
