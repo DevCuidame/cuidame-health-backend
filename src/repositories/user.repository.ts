@@ -21,7 +21,7 @@ export class UserRepository extends BaseRepository<User> {
       where: { email },
       relations: ['userRoles', 'userRoles.role']
     };
-
+  
     if (includePassword) {
       options.select = {
         id: true,
@@ -29,13 +29,20 @@ export class UserRepository extends BaseRepository<User> {
         password: true,
         name: true,
         lastname: true,
-        verificado: true
+        verificado: true,
+        phone: true,
+        typeid: true,
+        numberid: true,
+        address: true,
+        city_id: true,
+        pubname: true,
+        privname: true,
+        imagebs64: true,
       };
     }
-
+  
     return await this.repository.findOne(options);
   }
-
   /**
    * Encuentra usuarios por filtros
    * @param filters Filtros para la búsqueda

@@ -16,12 +16,15 @@ import {
 import { IAuthResponse } from '../interfaces/auth.interface';
 import logger from '../utils/logger';
 import { PasswordService } from '../utils/password.util';
+import { PatientRepository } from '../repositories/patient.repository';
 
 export class AuthService {
   private userRepository: UserRepository;
+  private patientRepository: PatientRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
+    this.patientRepository = new PatientRepository(); 
   }
 
   /**
@@ -79,6 +82,11 @@ export class AuthService {
     // Actualizar token de sesión en la base de datos
     await this.userRepository.updateSessionToken(user.id, token);
 
+
+    const patientCount = await this.patientRepository.count({
+      where: { a_cargo_id: user.id }
+    });
+
     // Crear objeto de respuesta
     const userData = {
       user: {
@@ -87,12 +95,21 @@ export class AuthService {
         name: user.name,
         lastname: user.lastname,
         verificado: user.verificado,
+        phone: user.phone,
+        typeid: user.typeid,
+        numberid: user.numberid,
+        address: user.address,
+        city_id: user.city_id,
+        pubname: user.pubname,
+        privname: user.privname,
+        imagebs64: user.imagebs64,
       },
-      // Agregar roles si están disponibles
       roles: user.userRoles?.map((ur) => ur.role.name) || [],
       access_token: token as any,
       refresh_token: token as any,
+      patientCount: patientCount,
     };
+    console.log("🚀 ~ AuthService ~ login ~ userData:", userData)
 
     return {
       success: true,
