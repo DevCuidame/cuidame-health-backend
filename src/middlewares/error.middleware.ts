@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/error-handler';
 import logger from '../utils/logger';
-import config from '../config/environment';
+import config from '../core/config/environment';
 
 /**
  * Manejador de errores para errores de desarrollo

@@ -1,5 +1,5 @@
 import winston from 'winston';
-import config from '../config/environment';
+import config from '../core/config/environment';
 
 // Opciones para el logger
 const options: winston.LoggerOptions = {

@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import config from '../config/environment';
 import { UnauthorizedError } from '../utils/error-handler';
-import { AppDataSource } from '../config/database';
-import { RefreshTokenPayload } from '../interfaces/auth.interface';
+import config from '../core/config/environment';
+import { AppDataSource } from '../core/config/database';
 
 // Extender interface de Request para incluir usuario
 declare global {

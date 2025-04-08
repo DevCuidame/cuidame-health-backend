@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import authRoutes from './auth.routes';
-import userRoutes from './user.routes';
-import patientRoutes from './patient.routes';
-import locationRoutes from './location.routes';
+import authRoutes from '../modules/auth/auth.routes';
+import userRoutes from '../modules/user/user.routes';
+import patientRoutes from '../modules/patient/patient.routes';
+import locationRoutes from '../modules/location/location.routes';
 
 const router = Router();
 

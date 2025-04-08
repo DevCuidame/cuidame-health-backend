@@ -1,5 +1,5 @@
 import app from './app';
-import config from './config/environment';
+import config from './core/config/environment';
 import logger from './utils/logger';
 
 // Establecer puerto

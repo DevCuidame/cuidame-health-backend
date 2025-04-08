@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import config from '../config/environment';
 import { BadRequestError } from './error-handler';
+import config from '../core/config/environment';
 
 /**
  * Clase de utilidad para el manejo de archivos e imágenes

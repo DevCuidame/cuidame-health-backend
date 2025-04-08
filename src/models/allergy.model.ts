@@ -1,5 +1,5 @@
+import { Patient } from '../modules/patient/patient.model';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Patient } from './patient.model';
 
 @Entity('alergias')
 export class Allergy {
@@ -22,7 +22,7 @@ export class Allergy {
   updated_at!: Date;
 
   // Relaciones
-  @ManyToOne(() => Patient, patient => patient.allergies)
+  @ManyToOne(() => Patient, Patient => Patient.allergies)
   @JoinColumn({ name: 'id_paciente' })
   patient!: Patient;
 }

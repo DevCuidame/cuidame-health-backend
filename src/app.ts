@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { setupExpress } from './config/express';
-import { AppDataSource } from './config/database';
+import { setupExpress } from './core/config/express';
+import { AppDataSource } from './core/config/database';
 import routes from './routes';
-import config from './config/environment';
+import config from './core/config/environment';
 import logger from './utils/logger';
 
 // Inicializar aplicación Express

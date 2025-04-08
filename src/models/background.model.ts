@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Patient } from './patient.model';
+import { Patient } from '../modules/patient/patient.model';
 
 // Modelo para antecedentes médicos
 @Entity('antecedentes')
