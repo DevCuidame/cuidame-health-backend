@@ -1,11 +1,41 @@
-import { FindManyOptions, FindOneOptions, FindOptionsWhere, ILike } from 'typeorm';
+// src/modules/patient/patient.repository.ts
 import { BaseRepository } from '../../core/repositories/base.repository';
 import { Patient } from '../../models/patient.model';
-import { NotFoundError } from '../../utils/error-handler';
 
 export class PatientRepository extends BaseRepository<Patient> {
   constructor() {
     super(Patient);
+  }
+
+  /**
+   * Verifica si ya existe un paciente con el mismo número de identificación
+   * @param numeroid Número de identificación a verificar
+   * @param id ID del paciente a excluir (para actualizaciones)
+   * @returns true si el paciente ya existe, false en caso contrario
+   */
+  async existsByNumeroid(numeroid: string, id?: number): Promise<boolean> {
+    const query = this.repository.createQueryBuilder('patient')
+      .where('patient.numeroid = :numeroid', { numeroid });
+    
+    // Si se proporciona un ID, excluir ese paciente (para actualizaciones)
+    if (id) {
+      query.andWhere('patient.id != :id', { id });
+    }
+    
+    const count = await query.getCount();
+    return count > 0;
+  }
+
+  /**
+   * Encuentra un paciente por número de identificación
+   * @param numeroid Número de identificación
+   * @returns Paciente encontrado o null
+   */
+  async findByNumeroid(numeroid: string): Promise<Patient | null> {
+    return await this.repository.findOne({
+      where: { numeroid },
+      relations: ['caregiver']
+    });
   }
 
   /**

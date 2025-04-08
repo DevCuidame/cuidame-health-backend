@@ -32,7 +32,7 @@ export class Background {
 }
 
 // Modelo para antecedentes familiares
-@Entity('antecedentes_familiares')
+@Entity('atecedentes_familiares')
 export class FamilyBackground {
   @PrimaryGeneratedColumn('increment')
   id!: number;

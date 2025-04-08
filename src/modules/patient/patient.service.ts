@@ -1,21 +1,31 @@
-import { MedicalInfoRepository } from "../../modules/medical-info/medical-info.repository";
-import { PatientRepository } from "./patient.repository";
-import { HealthRepository } from "../../modules/health/health.repository";
-import { CreatePatientDto, UpdatePatientDto } from "./patient.dto";
-import { Patient } from "../../models/patient.model";
-import { FileUploadService } from "../../utils/file-upload.util";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../../utils/error-handler";
-import { PaginatedResult, PaginationParams } from "../../core/interfaces/response.interface";
+import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
+import { PatientRepository } from './patient.repository';
+import { HealthRepository } from '../../modules/health/health.repository';
+import { CreatePatientDto, UpdatePatientDto } from './patient.dto';
+import { Patient } from '../../models/patient.model';
+import { FileUploadService } from '../../utils/file-upload.util';
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../utils/error-handler';
+import {
+  PaginatedResult,
+  PaginationParams,
+} from '../../core/interfaces/response.interface';
+import { CodeRepository } from '../code/code.repository';
 
 export class PatientService {
   private patientRepository: PatientRepository;
   private medicalInfoRepository: MedicalInfoRepository;
   private healthRepository: HealthRepository;
+  private codeRepository: CodeRepository;
 
   constructor() {
     this.patientRepository = new PatientRepository();
     this.medicalInfoRepository = new MedicalInfoRepository();
     this.healthRepository = new HealthRepository();
+    this.codeRepository = new CodeRepository();
   }
 
   /**
@@ -24,56 +34,81 @@ export class PatientService {
    * @param caregiverId ID del cuidador que crea el paciente
    * @returns Paciente creado
    */
-  async createPatient( patientData: CreatePatientDto, caregiverId: number ): Promise<Patient> {
-    // Generar un código único para el paciente
-    const code = await this.patientRepository.generateUniqueCode();
-
-    // Extraer imagen base64 si existe
-    const imageBase64 = patientData.imagebs64;
-
-    // Crear el paciente primero (sin la URL de la foto)
-    const patient = await this.patientRepository.create({
-      ...patientData,
-      code,
-      a_cargo_id: caregiverId,
-      photourl: '',
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    // Si hay imagen, guardarla y actualizar la URL de la foto
-    let photoUrl = '';
-    if (imageBase64) {
-      try {
-        // Guardar imagen usando el servicio de utilidad
-        photoUrl = await FileUploadService.saveBase64Image(
-          imageBase64,
-          'patients', // Carpeta: patients
-          `patient_${patient.id}`, // Subcarpeta: patient_123
-          'profile' // Nombre base: profile
+  async createPatient(
+    patientData: CreatePatientDto,
+    caregiverId: number
+  ): Promise<Patient> {
+    try {
+      // Verificar si ya existe un paciente con el mismo número de identificación
+      const patientExists = await this.patientRepository.existsByNumeroid(
+        patientData.numeroid
+      );
+      if (patientExists) {
+        throw new BadRequestError(
+          `Ya existe un paciente con el número de identificación`
         );
+      }
 
-        if (photoUrl) {
-          // Actualizar la URL en la base de datos
-          await this.patientRepository.update(
-            patient.id,
-            {
-              photourl: photoUrl,
-              updated_at: new Date(),
-            },
-            'Paciente'
+      // Obtener un código disponible desde la tabla codes
+      const hashcode = await this.codeRepository.getAvailableCodeForPatient();
+
+      // Usar el hashcode como código del paciente
+      const code = hashcode;
+
+      // Extraer imagen base64 si existe
+      const imageBase64 = patientData.imagebs64;
+
+      // Crear el paciente primero (sin la URL de la foto)
+      const patient = await this.patientRepository.create({
+        ...patientData,
+        code,
+        a_cargo_id: caregiverId,
+        photourl: '',
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      // Si hay imagen, guardarla y actualizar la URL de la foto
+      let photoUrl = '';
+      if (imageBase64) {
+        try {
+          // Guardar imagen usando el servicio de utilidad
+          photoUrl = await FileUploadService.saveBase64Image(
+            imageBase64,
+            'patients', // Carpeta: patients
+            `patient_${patient.id}`, // Subcarpeta: patient_123
+            'profile' // Nombre base: profile
           );
 
-          // Actualizar el objeto del paciente antes de devolverlo
-          patient.photourl = photoUrl;
-        }
-      } catch (error) {
-        console.error('Error al guardar imagen de paciente:', error);
-        // No fallamos el proceso completo si hay error en la imagen
-      }
-    }
+          if (photoUrl) {
+            // Actualizar la URL en la base de datos
+            await this.patientRepository.update(
+              patient.id,
+              {
+                photourl: photoUrl,
+                updated_at: new Date(),
+              },
+              'Paciente'
+            );
 
-    return patient;
+            // Actualizar el objeto del paciente antes de devolverlo
+            patient.photourl = photoUrl;
+          }
+        } catch (error) {
+          console.error('Error al guardar imagen de paciente:', error);
+          // No fallamos el proceso completo si hay error en la imagen
+        }
+      }
+
+      return patient;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw new BadRequestError(
+          'No hay códigos disponibles para asignar al paciente. Por favor, contacte al administrador.'
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -183,6 +218,19 @@ export class PatientService {
     // Verificar permisos
     await this.getPatientById(patientId, caregiverId);
 
+    // Si se está actualizando el número de identificación, verificar que no exista otro paciente con ese número
+    if (patientData.numeroid) {
+      const patientExists = await this.patientRepository.existsByNumeroid(
+        patientData.numeroid,
+        patientId
+      );
+      if (patientExists) {
+        throw new BadRequestError(
+          `Ya existe un paciente con el número de identificación ${patientData.numeroid}`
+        );
+      }
+    }
+
     // Actualizar paciente
     const updatedPatient = await this.patientRepository.update(
       patientId,
@@ -204,7 +252,11 @@ export class PatientService {
    * @returns Paciente actualizado
    */
 
-  async updatePatientImage( patientId: number, imageData: string, caregiverId?: number ): Promise<Patient> {
+  async updatePatientImage(
+    patientId: number,
+    imageData: string,
+    caregiverId?: number
+  ): Promise<Patient> {
     // Verificar permisos
     const patient = await this.getPatientById(patientId, caregiverId);
 
@@ -249,7 +301,12 @@ export class PatientService {
     caregiverId?: number
   ): Promise<{ success: boolean; message: string }> {
     // Verificar permisos
-    await this.getPatientById(patientId, caregiverId);
+    const patient = await this.getPatientById(patientId, caregiverId);
+
+    // Si el paciente tiene un hashcode, liberarlo para su reutilización
+    if (patient.code) {
+      await this.codeRepository.releaseCode(patient.code);
+    }
 
     // Eliminar paciente
     const result = await this.patientRepository.delete(patientId, 'Paciente');

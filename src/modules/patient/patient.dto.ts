@@ -101,6 +101,15 @@ export class UpdatePatientDto {
   apellido?: string;
 
   @IsOptional()
+  @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
+  tipoid?: string;
+
+  @IsNotEmpty({ message: 'El número de identificación es requerido' })
+  @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
+  numeroid!: string;
+
+
+  @IsOptional()
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
   telefono?: string;
 

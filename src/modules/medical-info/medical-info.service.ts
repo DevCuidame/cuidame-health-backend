@@ -1,4 +1,4 @@
-import { PatientRepository } from '@modules/patient/patient.repository';
+import { PatientRepository } from '../../modules/patient/patient.repository';
 import { 
   CreateAllergyDto, 
   UpdateAllergyDto, 
@@ -12,10 +12,10 @@ import {
   UpdateVaccineDto
 } from '../health/health.dto';
 import { MedicalInfoRepository } from './medical-info.repository';
-import { ForbiddenError, NotFoundError } from '@utils/error-handler';
-import { Allergy } from '@models/allergy.model';
-import { Background, FamilyBackground, Vaccine } from '@models/background.model';
-import { Condition } from '@models/condition.model';
+import { ForbiddenError, NotFoundError } from '../../utils/error-handler';
+import { Allergy } from '../../models/allergy.model';
+import { Background, FamilyBackground, Vaccine } from '../../models/background.model';
+import { Condition } from '../../models/condition.model';
 
 export class MedicalInfoService {
   private medicalInfoRepository: MedicalInfoRepository;

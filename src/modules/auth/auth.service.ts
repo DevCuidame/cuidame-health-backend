@@ -20,13 +20,21 @@ import { PatientRepository } from '../patient/patient.repository';
 import { UserRepository } from '../user/user.repository';
 import { User } from '@models/user.model';
 
+import { HealthRepository } from '../../modules/health/health.repository';
+import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
+
+
 export class AuthService {
   private userRepository: UserRepository;
   private patientRepository: PatientRepository;
+  private healthRepository: HealthRepository;
+  private medicalInfoRepository: MedicalInfoRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
     this.patientRepository = new PatientRepository(); 
+    this.healthRepository = new HealthRepository();
+    this.medicalInfoRepository = new MedicalInfoRepository();
   }
 
   /**
@@ -87,12 +95,43 @@ export class AuthService {
     // Actualizar token de sesión en la base de datos
     await this.userRepository.updateSessionToken(user.id, token);
 
+    // Obtener el conteo de pacientes a cargo
     const patientCount = await this.patientRepository.count({
       where: { a_cargo_id: user.id }
     });
-    const cared_persons = await this.patientRepository.findAll({
+
+    // Obtener pacientes a cargo del usuario
+    let cared_persons = await this.patientRepository.findAll({
       where: { a_cargo_id: user.id }
     });
+
+    // Añadir datos de salud para cada paciente a cargo
+    if (cared_persons && cared_persons.length > 0) {
+      const enrichedPatients = await Promise.all(
+        cared_persons.map(async (patient) => {
+          // Obtener datos de salud para el paciente
+          const [
+            latestVitals,
+            medicalInfo
+          ] = await Promise.all([
+            this.healthRepository.getLatestVitals(patient.id),
+            this.medicalInfoRepository.getAllMedicalInfo(patient.id)
+          ]);
+
+          // Crear un objeto que combine el paciente con sus datos de salud
+          return {
+            ...patient,
+            health_data: {
+              vitals: latestVitals,
+              medical_info: medicalInfo
+            }
+          };
+        })
+      );
+
+      // Reemplazar la lista original con la enriquecida
+      cared_persons = enrichedPatients;
+    }
 
     // Crear objeto de respuesta
     const userData = {
@@ -115,7 +154,7 @@ export class AuthService {
       access_token: token,
       refresh_token: refreshToken,
       patientCount: patientCount,
-      cared_persons: cared_persons ,
+      cared_persons: cared_persons,
     };
 
     return {

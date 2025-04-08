@@ -198,6 +198,16 @@ CREATE TABLE IF NOT EXISTS public.vacunas
     CONSTRAINT vacunas_pkey PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS public.enfermedades
+(
+    id bigint NOT NULL ,
+    id_paciente bigint NOT NULL,
+    enfermedad character varying(200),
+    created_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL,
+    CONSTRAINT enfermedades_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS public.antecedentes_familiares
 (
     FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id),
