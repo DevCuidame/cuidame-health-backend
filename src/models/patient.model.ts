@@ -1,10 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { User } from '../user/user.model';
-import { Allergy } from '../../models/allergy.model';
-import { Condition } from '../../models/condition.model';
-import { Background, FamilyBackground, Vaccine } from '../../models/background.model';
-import { HeartRate, BloodPressure, BloodGlucose, BloodOxygen, RespiratoryRate } from '../../models/vitals.models';
-import { ControlMedicine } from '../../models/control-medicine.model';
+import { Allergy } from './allergy.model';
+import { Condition } from './condition.model';
+import { Background, FamilyBackground, Vaccine } from './background.model';
+import { HeartRate, BloodPressure, BloodGlucose, BloodOxygen, RespiratoryRate } from './vitals.models';
+import { ControlMedicine } from './control-medicine.model';
+import { User } from './user.model';
 @Entity('pacientes')
 export class Patient {
   @PrimaryGeneratedColumn('increment')
@@ -69,6 +69,9 @@ export class Patient {
 
   @Column({ nullable: true })
   nit?: string;
+
+  @Column({ nullable: true })
+  city_id?: number;
 
   @CreateDateColumn()
   created_at!: Date;

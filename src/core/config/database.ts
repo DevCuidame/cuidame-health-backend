@@ -14,7 +14,7 @@ const typeOrmConfig: PostgresConnectionOptions = {
   synchronize: false, // No sincronizar - ya tenemos una base de datos existente
   migrationsRun: false,
   logging: config.env === 'development',
-  entities: [path.join(__dirname, '../models/**/*.{js,ts}')],
+  entities: [path.join(__dirname, '../../models/**/*.{js,ts}')],
   migrations: [path.join(__dirname, '../migrations/**/*.{js,ts}')],
   ssl: config.env === 'production',
 };

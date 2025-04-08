@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS public.pacientes
     fecha_nacimiento date,
     genero character varying(30)  NOT NULL,
     ciudad character varying(50)  NOT NULL,
+    city_id bigint NOT NULL,
     departamento character varying(50)  NOT NULL,
     direccion character varying(255)  NOT NULL,
     rh character varying(35)  NOT NULL,

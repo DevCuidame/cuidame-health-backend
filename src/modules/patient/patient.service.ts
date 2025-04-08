@@ -2,7 +2,7 @@ import { MedicalInfoRepository } from "../../modules/medical-info/medical-info.r
 import { PatientRepository } from "./patient.repository";
 import { HealthRepository } from "../../modules/health/health.repository";
 import { CreatePatientDto, UpdatePatientDto } from "./patient.dto";
-import { Patient } from "./patient.model";
+import { Patient } from "../../models/patient.model";
 import { FileUploadService } from "../../utils/file-upload.util";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../../utils/error-handler";
 import { PaginatedResult, PaginationParams } from "../../core/interfaces/response.interface";

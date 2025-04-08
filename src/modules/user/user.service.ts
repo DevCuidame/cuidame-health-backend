@@ -1,9 +1,9 @@
 import { BadRequestError, NotFoundError, UnauthorizedError } from "../../utils/error-handler";
-import { User } from "./user.model";
 import { UserRepository } from "./user.repository";
 import { PaginatedResult, PaginationParams } from "src/core/interfaces/response.interface";
 import { UserFilterOptions } from "./user.interface";
 import { PasswordService } from "../../utils/password.util";
+import { User } from "@models/user.model";
 
 export class UserService {
   private userRepository: UserRepository;

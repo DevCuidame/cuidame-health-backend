@@ -1,4 +1,4 @@
-import { Patient } from '../modules/patient/patient.model';
+import { Patient } from './patient.model';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity('alergias')

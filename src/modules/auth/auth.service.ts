@@ -8,7 +8,6 @@ import {
   RefreshTokenPayload,
   IRefreshTokenData
 } from '../auth/auth.interface';
-import { User } from '../user/user.model';
 import {
   BadRequestError,
   UnauthorizedError,
@@ -19,6 +18,7 @@ import logger from '../../utils/logger';
 import { PasswordService } from '../../utils/password.util';
 import { PatientRepository } from '../patient/patient.repository';
 import { UserRepository } from '../user/user.repository';
+import { User } from '@models/user.model';
 
 export class AuthService {
   private userRepository: UserRepository;

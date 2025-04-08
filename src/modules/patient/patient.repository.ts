@@ -1,6 +1,6 @@
 import { FindManyOptions, FindOneOptions, FindOptionsWhere, ILike } from 'typeorm';
 import { BaseRepository } from '../../core/repositories/base.repository';
-import { Patient } from './patient.model';
+import { Patient } from '../../models/patient.model';
 import { NotFoundError } from '../../utils/error-handler';
 
 export class PatientRepository extends BaseRepository<Patient> {

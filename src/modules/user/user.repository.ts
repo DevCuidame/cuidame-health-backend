@@ -1,9 +1,9 @@
 import { FindOneOptions, FindOptionsWhere, ILike, In } from 'typeorm';
 import { BaseRepository } from '../../core/repositories/base.repository';
-import { User } from '../user/user.model';
 import { UserFilterOptions } from './user.interface';
 import { NotFoundError } from '../../utils/error-handler';
 import { UserRole } from '../../models/user-role.model';
+import { User } from '../../models/user.model';
 
 export class UserRepository extends BaseRepository<User> {
   constructor() {

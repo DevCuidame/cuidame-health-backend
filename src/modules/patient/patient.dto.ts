@@ -26,6 +26,10 @@ export class CreatePatientDto {
   @IsISO8601({}, { message: 'La fecha de nacimiento debe tener un formato válido (YYYY-MM-DD)' })
   fecha_nacimiento?: string;
 
+  @IsOptional()
+  @IsNumber({}, { message: 'El ID de la ciudad debe ser un número' })
+  city_id?: number;
+
   @IsNotEmpty({ message: 'El género es requerido' })
   @IsString({ message: 'El género debe ser una cadena de texto' })
   genero!: string;
