@@ -16,6 +16,8 @@ import { ForbiddenError, NotFoundError } from '../../utils/error-handler';
 import { Allergy } from '../../models/allergy.model';
 import { Background, FamilyBackground, Vaccine } from '../../models/background.model';
 import { Condition } from '../../models/condition.model';
+import { CreateDiseaseDto, UpdateDiseaseDto } from '../health/health.dto';
+import { Disease } from '@models/diseases.model';
 
 export class MedicalInfoService {
   private medicalInfoRepository: MedicalInfoRepository;
@@ -280,4 +282,54 @@ export class MedicalInfoService {
     
     return await this.medicalInfoRepository.getAllMedicalInfo(patientId);
   }
+
+
+  async createDisease(data: CreateDiseaseDto, caregiverId?: number): Promise<Disease> {
+    await this.verifyAccess(data.id_paciente, caregiverId);
+    
+    return await this.medicalInfoRepository.createDisease({
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+  }
+  
+  async getDiseaseById(id: number, caregiverId?: number): Promise<Disease> {
+    const disease = await this.medicalInfoRepository.getDiseaseById(id);
+    
+    if (!disease) {
+      throw new NotFoundError(`Enfermedad con ID ${id} no encontrada`);
+    }
+    
+    await this.verifyAccess(disease.id_paciente, caregiverId);
+    
+    return disease;
+  }
+  
+  async getDiseasesByPatient(patientId: number, caregiverId?: number): Promise<Disease[]> {
+    await this.verifyAccess(patientId, caregiverId);
+    
+    return await this.medicalInfoRepository.getDiseasesByPatient(patientId);
+  }
+  
+  async updateDisease(id: number, data: UpdateDiseaseDto, caregiverId?: number): Promise<Disease> {
+    const disease = await this.getDiseaseById(id, caregiverId);
+    
+    return await this.medicalInfoRepository.updateDisease(id, {
+      ...data,
+      updated_at: new Date()
+    });
+  }
+  
+  async deleteDisease(id: number, caregiverId?: number): Promise<{ success: boolean, message: string }> {
+    const disease = await this.getDiseaseById(id, caregiverId);
+    
+    const result = await this.medicalInfoRepository.deleteDisease(id);
+    
+    return {
+      success: result,
+      message: result ? 'Enfermedad eliminada correctamente' : 'No se pudo eliminar la enfermedad'
+    };
+  }
+
 }

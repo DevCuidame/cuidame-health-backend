@@ -2,6 +2,8 @@ import { MedicalInfoService } from './medical-info.service';
 import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
 import { Allergy } from '@models/allergy.model';
 import { Background, FamilyBackground, Vaccine } from '@models/background.model';
+import { BatchDiseasesDto } from '../health/batch-health.dto';
+import { Disease } from '@models/diseases.model';
 
 export class BatchMedicalInfoService {
   private medicalInfoService: MedicalInfoService;
@@ -122,4 +124,33 @@ export class BatchMedicalInfoService {
     
     return results;
   }
+
+  
+/**
+ * Crea múltiples enfermedades para un paciente en una sola operación
+ * @param data DTO con el ID del paciente y array de enfermedades
+ * @param caregiverId ID del cuidador (opcional)
+ * @returns Array de enfermedades creadas
+ */
+async createBatchDiseases(data: BatchDiseasesDto, caregiverId?: number): Promise<Disease[]> {
+  const results: Disease[] = [];
+  
+  // Verificar permisos solo una vez
+  if (caregiverId) {
+    await this.medicalInfoService['verifyAccess'](data.id_paciente, caregiverId);
+  }
+  
+  // Procesar todas las enfermedades de forma secuencial
+  for (const diseaseData of data.enfermedades) {
+    const disease = await this.medicalInfoService.createDisease({
+      id_paciente: data.id_paciente,
+      enfermedad: diseaseData.enfermedad,
+    }, undefined); // No verificamos permisos de nuevo
+    
+    results.push(disease);
+  }
+  
+  return results;
+}
+
 }

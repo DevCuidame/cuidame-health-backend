@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BatchMedicalInfoService } from './batch-medical-info.service';
 import { ApiResponse } from '../../core/interfaces/response.interface';
-import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
+import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto, BatchDiseasesDto } from '../health/batch-health.dto';
 
 export class BatchMedicalInfoController {
   private batchMedicalInfoService: BatchMedicalInfoService;
@@ -106,4 +106,29 @@ export class BatchMedicalInfoController {
       next(error);
     }
   };
+
+  /**
+ * Crea múltiples enfermedades para un paciente
+ * @route POST /api/medical-info/batch/diseases
+ */
+createBatchDiseases = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const data: BatchDiseasesDto = req.body;
+    
+    const diseases = await this.batchMedicalInfoService.createBatchDiseases(data, userId);
+    
+    const response: ApiResponse = {
+      success: true,
+      message: `${diseases.length} enfermedades creadas correctamente`,
+      data: diseases,
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(201).json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
 }

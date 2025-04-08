@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { BatchMedicalInfoController } from './batch-medical-info.controller';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { validateDto } from '../../middlewares/validator.middleware';
-import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
+import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto, BatchDiseasesDto } from '../health/batch-health.dto';
 
 const router = Router();
 const batchMedicalInfoController = new BatchMedicalInfoController();
@@ -40,5 +40,12 @@ router.post('/backgrounds', validateDto(BatchBackgroundsDto), batchMedicalInfoCo
  * @access Private
  */
 router.post('/family-backgrounds', validateDto(BatchFamilyBackgroundsDto), batchMedicalInfoController.createBatchFamilyBackgrounds);
+
+/**
+ * @route POST /api/medical-info/batch/diseases
+ * @desc Crear múltiples enfermedades para un paciente
+ * @access Private
+ */
+router.post('/diseases', validateDto(BatchDiseasesDto), batchMedicalInfoController.createBatchDiseases);
 
 export default router;

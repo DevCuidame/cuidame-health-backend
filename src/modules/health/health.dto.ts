@@ -224,3 +224,20 @@ export class UpdateVaccineDto {
   @IsString({ message: 'El nombre de la vacuna debe ser una cadena de texto' })
   vacuna?: string;
 }
+
+export class CreateDiseaseDto {
+  @IsNotEmpty({ message: 'El ID del paciente es requerido' })
+  @IsNumber({}, { message: 'El ID del paciente debe ser un número' })
+  @Type(() => Number)
+  id_paciente!: number;
+
+  @IsNotEmpty({ message: 'El nombre de la enfermedad es requerido' })
+  @IsString({ message: 'El nombre de la enfermedad debe ser una cadena de texto' })
+  enfermedad!: string;
+}
+
+export class UpdateDiseaseDto {
+  @IsOptional()
+  @IsString({ message: 'El nombre de la enfermedad debe ser una cadena de texto' })
+  enfermedad?: string;
+}

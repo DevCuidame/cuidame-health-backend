@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { SyncMedicalInfoController } from './sync-medical-info.controller';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { validateDto } from '../../middlewares/validator.middleware';
-import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
+import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto, BatchDiseasesDto } from '../health/batch-health.dto';
 
 const router = Router();
 const syncMedicalInfoController = new SyncMedicalInfoController();
@@ -40,5 +40,12 @@ router.post('/backgrounds', validateDto(BatchBackgroundsDto), syncMedicalInfoCon
  * @access Private
  */
 router.post('/family-backgrounds', validateDto(BatchFamilyBackgroundsDto), syncMedicalInfoController.syncFamilyBackgrounds);
+
+/**
+ * @route POST /api/medical-info/sync/diseases
+ * @desc Sincronizar enfermedades de un paciente
+ * @access Private
+ */
+router.post('/diseases', validateDto(BatchDiseasesDto), syncMedicalInfoController.syncDiseases);
 
 export default router;

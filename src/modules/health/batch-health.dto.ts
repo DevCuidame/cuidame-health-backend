@@ -87,3 +87,19 @@ export class BatchFamilyBackgroundsDto {
   @Type(() => CreateFamilyBackgroundItemDto)
   antecedentes_familiares!: CreateFamilyBackgroundItemDto[];
 }
+
+export class CreateDiseaseItemDto {
+  @IsString({ message: 'El nombre de la enfermedad debe ser una cadena de texto' })
+  enfermedad!: string;
+}
+
+export class BatchDiseasesDto {
+  @IsNumber({}, { message: 'El ID del paciente debe ser un número' })
+  @Type(() => Number)
+  id_paciente!: number;
+
+  @IsArray({ message: 'Debe proporcionar un array de enfermedades' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateDiseaseItemDto)
+  enfermedades!: CreateDiseaseItemDto[];
+}

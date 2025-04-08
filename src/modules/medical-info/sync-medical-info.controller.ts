@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { SyncMedicalInfoService } from './sync-medical-info.service';
 import { ApiResponse } from '../../core/interfaces/response.interface';
-import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
+import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto, BatchDiseasesDto } from '../health/batch-health.dto';
 
 export class SyncMedicalInfoController {
   private syncMedicalInfoService: SyncMedicalInfoService;
@@ -106,4 +106,25 @@ export class SyncMedicalInfoController {
       next(error);
     }
   };
+
+  syncDiseases = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      const data: BatchDiseasesDto = req.body;
+      
+      const result = await this.syncMedicalInfoService.syncDiseases(data, userId);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: `Sincronización completa: ${result.created.length} enfermedades creadas, ${result.maintained.length} mantenidas, ${result.deleted.length} eliminadas`,
+        data: result,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
 }

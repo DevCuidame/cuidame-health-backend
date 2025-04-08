@@ -1,10 +1,26 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { Allergy } from './allergy.model';
 import { Condition } from './condition.model';
 import { Background, FamilyBackground, Vaccine } from './background.model';
-import { HeartRate, BloodPressure, BloodGlucose, BloodOxygen, RespiratoryRate } from './vitals.models';
+import {
+  HeartRate,
+  BloodPressure,
+  BloodGlucose,
+  BloodOxygen,
+  RespiratoryRate,
+} from './vitals.models';
 import { ControlMedicine } from './control-medicine.model';
 import { User } from './user.model';
+import { Disease } from './diseases.model';
 @Entity('pacientes')
 export class Patient {
   @PrimaryGeneratedColumn('increment')
@@ -90,36 +106,48 @@ export class Patient {
   @JoinColumn({ name: 'a_cargo_id' })
   caregiver!: User;
 
-  @OneToMany(() => Allergy, allergy => allergy.patient)
+  @OneToMany(() => Allergy, (allergy) => allergy.patient)
   allergies!: Allergy[];
 
-  @OneToMany(() => Condition, condition => condition.patient)
+  @OneToMany(() => Condition, (condition) => condition.patient)
   conditions!: Condition[];
 
-  @OneToMany(() => FamilyBackground, familyBackground => familyBackground.patient)
+  @OneToMany(() => Disease, (disease) => disease.patient)
+  diseases!: Disease[];
+
+  @OneToMany(
+    () => FamilyBackground,
+    (familyBackground) => familyBackground.patient
+  )
   familyBackgrounds!: FamilyBackground[];
 
-  @OneToMany(() => Background, background => background.patient)
+  @OneToMany(() => Background, (background) => background.patient)
   backgrounds!: Background[];
 
-  @OneToMany(() => HeartRate, heartRate => heartRate.patient)
+  @OneToMany(() => HeartRate, (heartRate) => heartRate.patient)
   heartRates!: HeartRate[];
 
-  @OneToMany(() => BloodPressure, bloodPressure => bloodPressure.patient)
+  @OneToMany(() => BloodPressure, (bloodPressure) => bloodPressure.patient)
   bloodPressures!: BloodPressure[];
 
-  @OneToMany(() => BloodGlucose, bloodGlucose => bloodGlucose.patient)
+  @OneToMany(() => BloodGlucose, (bloodGlucose) => bloodGlucose.patient)
   bloodGlucoses!: BloodGlucose[];
 
-  @OneToMany(() => BloodOxygen, bloodOxygen => bloodOxygen.patient)
+  @OneToMany(() => BloodOxygen, (bloodOxygen) => bloodOxygen.patient)
   bloodOxygens!: BloodOxygen[];
 
-  @OneToMany(() => RespiratoryRate, respiratoryRate => respiratoryRate.patient)
+  @OneToMany(
+    () => RespiratoryRate,
+    (respiratoryRate) => respiratoryRate.patient
+  )
   respiratoryRates!: RespiratoryRate[];
 
-  @OneToMany(() => Vaccine, vaccine => vaccine.patient)
+  @OneToMany(() => Vaccine, (vaccine) => vaccine.patient)
   vaccines!: Vaccine[];
 
-  @OneToMany(() => ControlMedicine, controlMedicine => controlMedicine.patient)
+  @OneToMany(
+    () => ControlMedicine,
+    (controlMedicine) => controlMedicine.patient
+  )
   medicines!: ControlMedicine[];
 }

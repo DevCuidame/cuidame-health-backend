@@ -1,9 +1,10 @@
 // src/modules/medical-info/sync-medical-info.service.ts
 import { MedicalInfoRepository } from './medical-info.repository';
 import { MedicalInfoService } from './medical-info.service';
-import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto } from '../health/batch-health.dto';
+import { BatchVaccinesDto, BatchAllergiesDto, BatchBackgroundsDto, BatchFamilyBackgroundsDto, BatchDiseasesDto } from '../health/batch-health.dto';
 import { Allergy } from '@models/allergy.model';
 import { Background, FamilyBackground, Vaccine } from '@models/background.model';
+import { Disease } from '@models/diseases.model';
 
 export class SyncMedicalInfoService {
   private medicalInfoService: MedicalInfoService;
@@ -344,4 +345,72 @@ export class SyncMedicalInfoService {
 
     return result;
   }
+
+  
+/**
+ * Sincroniza las enfermedades de un paciente:
+ * - Mantiene las que siguen en la nueva lista
+ * - Agrega las nuevas
+ * - Elimina las que ya no están en la nueva lista
+ * 
+ * @param data DTO con el ID del paciente y array de enfermedades
+ * @param caregiverId ID del cuidador (opcional)
+ * @returns Resultado de la sincronización
+ */
+async syncDiseases(data: BatchDiseasesDto, caregiverId?: number): Promise<{
+  created: Disease[];
+  maintained: Disease[];
+  deleted: { id: number; enfermedad: string }[];
+}> {
+  // Verificar permisos una sola vez
+  if (caregiverId) {
+    await this.medicalInfoService['verifyAccess'](data.id_paciente, caregiverId);
+  }
+
+  // 1. Obtener enfermedades actuales del paciente
+  const currentDiseases = await this.medicalInfoRepository.getDiseasesByPatient(data.id_paciente);
+  
+  // 2. Preparar los resultados
+  const result = {
+    created: [] as Disease[],
+    maintained: [] as Disease[],
+    deleted: [] as { id: number; enfermedad: string }[]
+  };
+
+  // 3. Identificar enfermedades que ya no están en la nueva lista (a eliminar)
+  for (const currentDisease of currentDiseases) {
+    const stillExists = data.enfermedades.some(d => 
+      d.enfermedad.toLowerCase().trim() === currentDisease.enfermedad?.toLowerCase().trim()
+    );
+    
+    if (!stillExists) {
+      result.deleted.push({ 
+        id: currentDisease.id, 
+        enfermedad: currentDisease.enfermedad || 'Desconocida' 
+      });
+      await this.medicalInfoRepository.deleteDisease(currentDisease.id);
+    } else {
+      result.maintained.push(currentDisease);
+    }
+  }
+
+  // 4. Identificar y crear nuevas enfermedades
+  for (const newDisease of data.enfermedades) {
+    const alreadyExists = currentDiseases.some(d => 
+      d.enfermedad?.toLowerCase().trim() === newDisease.enfermedad.toLowerCase().trim()
+    );
+    
+    if (!alreadyExists) {
+      const created = await this.medicalInfoService.createDisease({
+        id_paciente: data.id_paciente,
+        enfermedad: newDisease.enfermedad
+      }, undefined); // No verificamos permisos de nuevo
+      
+      result.created.push(created);
+    }
+  }
+
+  return result;
+}
+
 }

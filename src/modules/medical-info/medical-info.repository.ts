@@ -4,6 +4,7 @@ import { Condition } from '../../models/condition.model';
 import { NotFoundError } from '../../utils/error-handler';
 import { AppDataSource } from '../../core/config/database';
 import { Repository } from 'typeorm';
+import { Disease } from '../../models/diseases.model';
 
 /**
  * Repositorio para gestionar la información médica complementaria de los pacientes
@@ -14,6 +15,7 @@ export class MedicalInfoRepository {
   private backgroundRepository: Repository<Background>;
   private familyBackgroundRepository: Repository<FamilyBackground>;
   private vaccineRepository: Repository<Vaccine>;
+  private diseaseRepository: Repository<Disease>;
 
   constructor() {
     this.allergyRepository = AppDataSource.getRepository(Allergy);
@@ -21,6 +23,7 @@ export class MedicalInfoRepository {
     this.backgroundRepository = AppDataSource.getRepository(Background);
     this.familyBackgroundRepository = AppDataSource.getRepository(FamilyBackground);
     this.vaccineRepository = AppDataSource.getRepository(Vaccine);
+    this.diseaseRepository = AppDataSource.getRepository(Disease);
   }
 
   // Métodos para alergias
@@ -212,6 +215,45 @@ export class MedicalInfoRepository {
     return result.affected !== undefined && result.affected !== null && result.affected > 0;
   }
 
+  async createDisease(data: Partial<Disease>): Promise<Disease> {
+    const disease = this.diseaseRepository.create(data);
+    return await this.diseaseRepository.save(disease);
+  }
+  
+  async getDiseaseById(id: number): Promise<Disease | null> {
+    return await this.diseaseRepository.findOne({
+      where: { id },
+      relations: ['patient']
+    });
+  }
+  
+  async getDiseasesByPatient(patientId: number): Promise<Disease[]> {
+    return await this.diseaseRepository.find({
+      where: { id_paciente: patientId },
+      order: { created_at: 'DESC' }
+    });
+  }
+  
+  async updateDisease(id: number, data: Partial<Disease>): Promise<Disease> {
+    const disease = await this.getDiseaseById(id);
+    if (!disease) {
+      throw new NotFoundError(`Enfermedad con ID ${id} no encontrada`);
+    }
+    
+    await this.diseaseRepository.update(id, data);
+    return await this.getDiseaseById(id) as Disease;
+  }
+  
+  async deleteDisease(id: number): Promise<boolean> {
+    const disease = await this.getDiseaseById(id);
+    if (!disease) {
+      throw new NotFoundError(`Enfermedad con ID ${id} no encontrada`);
+    }
+    
+    const result = await this.diseaseRepository.delete(id);
+    return result.affected !== undefined && result.affected !== null && result.affected > 0;
+  }
+
   // Métodos para obtener todo el historial médico de un paciente
   async getAllMedicalInfo(patientId: number): Promise<{
     allergies: Allergy[];
@@ -219,13 +261,15 @@ export class MedicalInfoRepository {
     backgrounds: Background[];
     familyBackgrounds: FamilyBackground[];
     vaccines: Vaccine[];
+    diseases: Disease[];
   }> {
-    const [allergies, condition, backgrounds, familyBackgrounds, vaccines] = await Promise.all([
+    const [allergies, condition, backgrounds, familyBackgrounds, vaccines, diseases] = await Promise.all([
       this.getAllergiesByPatient(patientId),
       this.getConditionByPatient(patientId),
       this.getBackgroundsByPatient(patientId),
       this.getFamilyBackgroundsByPatient(patientId),
-      this.getVaccinesByPatient(patientId)
+      this.getVaccinesByPatient(patientId),
+      this.getDiseasesByPatient(patientId) 
     ]);
 
     return {
@@ -233,7 +277,9 @@ export class MedicalInfoRepository {
       condition,
       backgrounds,
       familyBackgrounds,
-      vaccines
+      vaccines,
+      diseases
     };
   }
 }
+
