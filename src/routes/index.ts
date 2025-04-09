@@ -6,7 +6,7 @@ import locationRoutes from '../modules/location/location.routes';
 import batchMedicalInfoRoutes from '../modules/medical-info/batch-medical-info.routes';
 import syncMedicalInfoRoutes from '../modules/medical-info/sync-medical-info.routes';
 import conditionRoutes from '../modules/condition/condition.routes';
-
+import vitalsRoutes from '../modules/vitals/vitals.routes';
 
 const router = Router();
 
@@ -17,5 +17,6 @@ router.use('/locations', locationRoutes);
 router.use('/medical-info/batch', batchMedicalInfoRoutes);
 router.use('/medical-info/sync', syncMedicalInfoRoutes);
 router.use('/medical-info/condition', conditionRoutes);
+router.use('/', vitalsRoutes);
 
 export default router;
