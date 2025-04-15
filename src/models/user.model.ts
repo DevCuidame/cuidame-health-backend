@@ -31,6 +31,12 @@ export class User {
   address?: string;
 
   @Column({ nullable: true })
+  gender?: string;
+
+  @Column({ nullable: true })
+  birth_date?: string;
+
+  @Column({ nullable: true })
   city_id?: number;
 
   @Column()
@@ -69,8 +75,8 @@ export class User {
   @Column({ nullable: true, type: 'text' })
   imagebs64?: string;
 
-  // @Column({ nullable: true })
-  // path?: string;
+  @Column({ nullable: true })
+  path?: string;
 
   // Relaciones
   @OneToMany(() => UserRole, userRole => userRole.user)

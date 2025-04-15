@@ -39,15 +39,17 @@ export interface RefreshTokenPayload extends JwtPayload {
 export interface IRegisterData {
   name: string;
   lastname: string;
-  typeID: string;
-  numberID: string;
+  typeid: string;
+  numberid: string;
   phone: string;
   email: string;
+  gender: string;
+  birth_date: string;
   password: string;
   city_id: number;
   address: string;
-  pubName?: string;
-  imageBs64?: string;
+  pubname?: string;
+  imagebs64?: string;
 }
 
 /**

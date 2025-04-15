@@ -22,6 +22,7 @@ import { User } from '@models/user.model';
 
 import { HealthRepository } from '../../modules/health/health.repository';
 import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
+import { FileUploadService } from '../../utils/file-upload.util';
 
 
 export class AuthService {
@@ -244,40 +245,71 @@ export class AuthService {
    */
   async register(userData: IRegisterData): Promise<IAuthResponse> {
     const { email, password } = userData;
-
+  
     // Verificar si el email ya está registrado
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
-      throw new BadRequestError('El correo electrónico ya está registrado');
+      throw new BadRequestError('No logramos registrar tu correo electrónico.');
     }
-
+    
+    // Verificar si el numero de identificación ya está registrado
+    const existingUserIdentification = await this.userRepository.findByIdentification(userData.numberid);
+    if (existingUserIdentification) {
+      throw new BadRequestError('No logramos registrar tu número de documento.');
+    }
+  
     // Generar hash de la contraseña
     const hashedPassword = PasswordService.hashPassword(password);
-
-    // Generar código único para el usuario
-    const code = `USR-${uuidv4().substring(0, 8)}`;
-    const hashcode = uuidv4();
-
-    // Crear usuario en la base de datos
+  
+    const imageBase64 = userData.imagebs64;
+    
+    const userDataToSave = { ...userData };
+    delete userDataToSave.imagebs64;
+  
     const newUser = await this.userRepository.create({
-      ...userData,
-      code,
-      hashcode,
+      ...userDataToSave,
       password: hashedPassword,
-      verificado: false, // Por defecto no verificado
+      verificado: false,
       created_at: new Date(),
       updated_at: new Date(),
     });
-
-    // Asignar rol por defecto (usuario normal)
-    await this.userRepository.assignRole(newUser.id, 2); // Asumiendo que el ID 2 es para usuarios normales
-
+  
+    // Si hay imagen, guardarla y actualizar la URL de la foto
+    let photoUrl = '';
+    if (imageBase64) {
+      try {
+        // Guardar imagen usando el servicio de utilidad
+        photoUrl = await FileUploadService.saveBase64Image(
+          imageBase64,
+          'users',
+          'profile'
+        );
+  
+        if (photoUrl) {
+          // Actualizar la URL en la base de datos
+          await this.userRepository.update(
+            newUser.id,
+            {
+              path: photoUrl,
+              updated_at: new Date(),
+            },
+            'User'
+          );
+  
+          // Actualizar el objeto del paciente antes de devolverlo
+          newUser.path = photoUrl;
+        }
+      } catch (error) {
+        console.error('Error al guardar imagen de paciente:', error);
+        // No fallamos el proceso completo si hay error en la imagen
+      }
+    }
+  
     // TODO: Enviar email de verificación (implementar en un servicio de email)
-
+  
     return {
       success: true,
-      message:
-        'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.',
+      message: 'Usuario registrado exitosamente. Por favor, verifica tu correo electrónico.',
       data: {
         id: newUser.id,
         email: newUser.email,

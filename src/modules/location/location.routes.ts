@@ -8,7 +8,7 @@ const locationController = new LocationController();
 /**
  * Routes that require authentication
  */
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 /**
  * @route GET /api/locations/departments

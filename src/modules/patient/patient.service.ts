@@ -76,7 +76,7 @@ export class PatientService {
           photoUrl = await FileUploadService.saveBase64Image(
             imageBase64,
             'patients', // Carpeta: patients
-            `patient_${patient.id}`, // Subcarpeta: patient_123
+            // `patient_${patient.id}`, // Subcarpeta: patient_123
             'profile' // Nombre base: profile
           );
 

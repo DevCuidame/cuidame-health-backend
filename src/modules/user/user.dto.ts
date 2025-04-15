@@ -11,11 +11,19 @@ export class CreateUserDto {
 
   @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
   @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
-  typeid!: string;
+  typeid!: string; 
 
   @IsNotEmpty({ message: 'El número de identificación es requerido' })
   @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
-  numberid!: string;
+  numberid!: string;  
+
+  @IsOptional()
+  @IsString({ message: 'El género debe ser una cadena de texto' })
+  gender?: string;  
+
+  @IsOptional()
+  @IsString({ message: 'La fecha de nacimiento debe ser una cadena de texto' })
+  birth_date?: string;  
 
   @IsOptional()
   @IsString({ message: 'El tipo de persona debe ser una cadena de texto' })
@@ -47,16 +55,8 @@ export class CreateUserDto {
   pubname?: string;
 
   @IsOptional()
-  @IsString({ message: 'El nombre privado debe ser una cadena de texto' })
-  privname?: string;
-
-  @IsOptional()
   imagebs64?: string;
 
-  @IsOptional()
-  @IsString({ message: 'La ruta debe ser una cadena de texto' })
-  path?: string;
-  
   @IsOptional()
   @IsBoolean({ message: 'El estado de verificación debe ser un valor booleano' })
   verificado?: boolean;

@@ -43,6 +43,40 @@ export class UserRepository extends BaseRepository<User> {
   
     return await this.repository.findOne(options);
   }
+
+  /**
+   * Encuentra un usuario por email
+   * @param email Email del usuario
+   * @param includePassword Si se debe incluir la contraseña en el resultado
+   * @returns El usuario encontrado o null
+   */
+  async findByIdentification(numberid: string, includePassword: boolean = false): Promise<User | null> {
+    const options: FindOneOptions<User> = {
+      where: { numberid }
+    };
+  
+    if (includePassword) {
+      options.select = {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        lastname: true,
+        verificado: true,
+        phone: true,
+        typeid: true,
+        numberid: true,
+        address: true,
+        city_id: true,
+        pubname: true,
+        privname: true,
+        imagebs64: true,
+      };
+    }
+  
+    return await this.repository.findOne(options);
+  }
+
   /**
    * Encuentra usuarios por filtros
    * @param filters Filtros para la búsqueda

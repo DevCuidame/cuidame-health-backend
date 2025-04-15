@@ -21,11 +21,11 @@ export class RegisterDto {
 
   @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
   @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
-  typeID!: string;
+  typeid!: string;
 
   @IsNotEmpty({ message: 'El número de identificación es requerido' })
   @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
-  numberID!: string;
+  numberid!: string;
 
   @IsNotEmpty({ message: 'El teléfono es requerido' })
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
@@ -35,6 +35,15 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'El correo electrónico es requerido' })
   @IsEmail({}, { message: 'Debe proporcionar un correo electrónico válido' })
   email!: string;
+
+  @IsOptional()
+  @IsString({ message: 'El género debe ser una cadena de texto' })
+  gender!: string;  
+
+  @IsOptional()
+  @IsString({ message: 'La fecha de nacimiento debe ser una cadena de texto' })
+  birth_date!: string;  
+
 
   @IsNotEmpty({ message: 'La contraseña es requerida' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
@@ -49,10 +58,10 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString({ message: 'El nombre público debe ser una cadena de texto' })
-  pubName?: string;
+  pubname?: string;
 
   @IsOptional()
-  imageBs64?: string;
+  imagebs64?: string;
 }
 
 export class ForgotPasswordDto {

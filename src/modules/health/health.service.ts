@@ -1,4 +1,4 @@
-import { PatientRepository } from '@modules/patient/patient.repository';
+import { PatientRepository } from '../../modules/patient/patient.repository';
 import { 
   CreateHeartRateDto, 
   CreateBloodPressureDto, 
@@ -7,8 +7,8 @@ import {
   CreateRespiratoryRateDto 
 } from '../health/health.dto';
 import { HealthRepository } from './health.repository';
-import { ForbiddenError, NotFoundError } from '@utils/error-handler';
-import { BloodGlucose, BloodOxygen, BloodPressure, HeartRate, RespiratoryRate } from '@models/vitals.models';
+import { ForbiddenError, NotFoundError } from '../../utils/error-handler';
+import { BloodGlucose, BloodOxygen, BloodPressure, HeartRate, RespiratoryRate } from '../../models/vitals.models';
 
 export class HealthService {
   private healthRepository: HealthRepository;
