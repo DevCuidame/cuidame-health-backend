@@ -13,13 +13,17 @@ export const setupExpress = (): Application => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Seguridad - Modificar Helmet para permitir imágenes
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" }, 
+      contentSecurityPolicy: false 
+    })
+  );
 
-  // Seguridad
-  app.use(helmet());
-
-  // Configure CORS with specific options
+  // Configure CORS con opciones específicas
   const corsOptions = {
-    origin: [ 'http://localhost:8100', 'http://localhost:4200', 'capacitor://localhost', ], 
+    origin: ['http://localhost:8100', 'http://localhost:4200', 'capacitor://localhost'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -27,7 +31,7 @@ export const setupExpress = (): Application => {
     optionsSuccessStatus: 204,
   };
 
-  // Apply CORS middleware with options
+  // Aplicar middleware CORS con opciones
   app.use(cors(corsOptions));
 
   // Logging
@@ -37,10 +41,22 @@ export const setupExpress = (): Application => {
     app.use(morgan('combined'));
   }
 
+  app.use('/uploads', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
+
   // Carpeta estática para archivos subidos
   app.use(
     '/uploads',
-    express.static(path.join(process.cwd(), config.fileUpload.path))
+    express.static(path.join(process.cwd(), config.fileUpload.path), {
+      setHeaders: (res) => {
+        // Agregar encabezados adicionales específicos para archivos estáticos
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      }
+    })
   );
 
   // Ruta de estado
@@ -53,7 +69,7 @@ export const setupExpress = (): Application => {
     });
   });
 
-  // Middleware global para manejo de errores
+  // Middleware global para manejo de errores debe ser el último
   app.use(errorMiddleware);
 
   return app;

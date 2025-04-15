@@ -38,6 +38,7 @@ export class PatientService {
     patientData: CreatePatientDto,
     caregiverId: number
   ): Promise<Patient> {
+    console.log('🚀 ~ PatientService ~ patientData:', patientData);
     try {
       // Verificar si ya existe un paciente con el mismo número de identificación
       const patientExists = await this.patientRepository.existsByNumeroid(
@@ -50,18 +51,33 @@ export class PatientService {
       }
 
       // Obtener un código disponible desde la tabla codes
-      const hashcode = await this.codeRepository.getAvailableCodeForPatient();
+      if (!patientData.code) {
+        const hashcode = await this.codeRepository.getAvailableCodeForPatient();
+        patientData.code = hashcode;
+      } else {
+        const code = await this.codeRepository.findByCode(patientData.code);
+        patientData.code = code!.hashcode;
+      }
 
-      // Usar el hashcode como código del paciente
-      const code = hashcode;
+      const {
+        id, // Eliminamos cualquier id que venga
+        public_name, // Eliminamos esta propiedad que no está en la entidad
+        departamento: departamentoParam,
+        ...cleanedData
+      } = patientData as any;
+
+      // Convertimos departamento a string si viene como número
+      const departamento =
+        typeof departamentoParam === 'number'
+          ? departamentoParam.toString()
+          : departamentoParam;
 
       // Extraer imagen base64 si existe
       const imageBase64 = patientData.imagebs64;
 
-      // Crear el paciente primero (sin la URL de la foto)
       const patient = await this.patientRepository.create({
-        ...patientData,
-        code,
+        ...cleanedData,
+        departamento,
         a_cargo_id: caregiverId,
         photourl: '',
         created_at: new Date(),
@@ -76,7 +92,6 @@ export class PatientService {
           photoUrl = await FileUploadService.saveBase64Image(
             imageBase64,
             'patients', // Carpeta: patients
-            // `patient_${patient.id}`, // Subcarpeta: patient_123
             'profile' // Nombre base: profile
           );
 
@@ -89,6 +104,15 @@ export class PatientService {
                 updated_at: new Date(),
               },
               'Paciente'
+            );
+
+            await this.patientRepository.update(
+              patient.id,
+              {
+                imagebs64: null,
+                updated_at: new Date(),
+              },
+              'Paciente	'
             );
 
             // Actualizar el objeto del paciente antes de devolverlo

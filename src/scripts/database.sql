@@ -364,3 +364,10 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trigger_control_medicines_changes
 AFTER INSERT OR UPDATE OR DELETE ON controlMedicines
 FOR EACH ROW EXECUTE FUNCTION log_control_medicines_changes();
+
+
+
+
+---
+
+--Agregar campos a user, pacientes y modificar not null

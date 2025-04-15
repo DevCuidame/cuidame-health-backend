@@ -2,6 +2,10 @@ import { IsString, IsNotEmpty, IsOptional, IsDate, IsNumber, IsISO8601 } from 'c
 import { Type } from 'class-transformer';
 
 export class CreatePatientDto {
+  @IsOptional()
+  @IsString({ message: 'El ID debe ser un número' })
+  id?: number;
+
   @IsNotEmpty({ message: 'El nombre es requerido' })
   @IsString({ message: 'El nombre debe ser una cadena de texto' })
   nombre!: string;
@@ -9,6 +13,10 @@ export class CreatePatientDto {
   @IsNotEmpty({ message: 'El apellido es requerido' })
   @IsString({ message: 'El apellido debe ser una cadena de texto' })
   apellido!: string;
+
+  @IsOptional()
+  @IsString({ message: 'El código debe ser una cadena de texto' })
+  code?: string;
 
   @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
   @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
@@ -34,13 +42,13 @@ export class CreatePatientDto {
   @IsString({ message: 'El género debe ser una cadena de texto' })
   genero!: string;
 
-  @IsNotEmpty({ message: 'La ciudad es requerida' })
+  @IsOptional()
   @IsString({ message: 'La ciudad debe ser una cadena de texto' })
-  ciudad!: string;
+  ciudad?: string;
 
-  @IsNotEmpty({ message: 'El departamento es requerido' })
-  @IsString({ message: 'El departamento debe ser una cadena de texto' })
-  departamento!: string;
+  @IsOptional({ message: 'El departamento es requerido' })
+  @IsNumber({},{ message: 'El departamento debe ser un número' })
+  departamento?: string;
 
   @IsNotEmpty({ message: 'La dirección es requerida' })
   @IsString({ message: 'La dirección debe ser una cadena de texto' })
@@ -88,7 +96,11 @@ export class CreatePatientDto {
   photourl?: string;
 
   @IsOptional()
-  imagebs64?: string;
+  @IsString({ message: 'La URL de la foto debe ser una cadena de texto' })
+  public_name?: string;
+
+  @IsOptional()
+  imagebs64?: string | null;
 }
 
 export class UpdatePatientDto {

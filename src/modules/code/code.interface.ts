@@ -7,3 +7,10 @@ export interface ICode {
   created_at?: string;
   status?: string;
 }
+
+
+export interface IBandAuthResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}

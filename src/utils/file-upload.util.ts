@@ -74,9 +74,9 @@ export class FileUploadService {
       // Construir URL relativa
       let relativePath = '';
       if (subFolder) {
-        relativePath = `/uploads/${folder}/${subFolder}/${actualFileName}`;
+        relativePath = `uploads/${folder}/${subFolder}/${actualFileName}`;
       } else {
-        relativePath = `/uploads/${folder}/${actualFileName}`;
+        relativePath = `uploads/${folder}/${actualFileName}`;
       }
       
       return relativePath;

@@ -27,7 +27,7 @@ export class Patient {
   id!: number;
 
   @Column({ unique: true })
-  code!: string;
+  code?: string;
 
   @Column()
   nombre!: string;
@@ -51,16 +51,16 @@ export class Patient {
   genero!: string;
 
   @Column()
-  ciudad!: string;
+  ciudad?: string;
 
   @Column()
-  departamento!: string;
+  departamento?: string;
 
   @Column()
   direccion!: string;
 
   @Column()
-  rh!: string;
+  rh?: string;
 
   @Column({ nullable: true })
   eps?: string;
@@ -99,7 +99,7 @@ export class Patient {
   photourl?: string;
 
   @Column({ nullable: true, type: 'text' })
-  imagebs64?: string;
+  imagebs64?: string | null;
 
   // Relaciones
   @ManyToOne(() => User)
