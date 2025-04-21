@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsDate, IsNumber, IsISO8601 } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsDate,
+  IsNumber,
+  IsISO8601,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreatePatientDto {
@@ -19,11 +26,15 @@ export class CreatePatientDto {
   code?: string;
 
   @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
-  @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
+  @IsString({
+    message: 'El tipo de identificación debe ser una cadena de texto',
+  })
   tipoid!: string;
 
   @IsNotEmpty({ message: 'El número de identificación es requerido' })
-  @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
+  @IsString({
+    message: 'El número de identificación debe ser una cadena de texto',
+  })
   numeroid!: string;
 
   @IsNotEmpty({ message: 'El teléfono es requerido' })
@@ -31,7 +42,13 @@ export class CreatePatientDto {
   telefono!: string;
 
   @IsOptional()
-  @IsISO8601({}, { message: 'La fecha de nacimiento debe tener un formato válido (YYYY-MM-DD)' })
+  @IsISO8601(
+    {},
+    {
+      message:
+        'La fecha de nacimiento debe tener un formato válido (YYYY-MM-DD)',
+    }
+  )
   fecha_nacimiento?: string;
 
   @IsOptional()
@@ -47,7 +64,7 @@ export class CreatePatientDto {
   ciudad?: string;
 
   @IsOptional({ message: 'El departamento es requerido' })
-  @IsNumber({},{ message: 'El departamento debe ser un número' })
+  @IsNumber({}, { message: 'El departamento debe ser un número' })
   departamento?: string;
 
   @IsNotEmpty({ message: 'La dirección es requerida' })
@@ -104,6 +121,14 @@ export class CreatePatientDto {
 }
 
 export class UpdatePatientDto {
+  @IsNotEmpty()
+  @IsNumber({}, { message: 'El id debe ser un número' })
+  id?: any;
+
+  @IsOptional()
+  @IsString({ message: 'El código debe ser una cadena de texto' })
+  code?: string;
+
   @IsOptional()
   @IsString({ message: 'El nombre debe ser una cadena de texto' })
   nombre?: string;
@@ -113,20 +138,33 @@ export class UpdatePatientDto {
   apellido?: string;
 
   @IsOptional()
-  @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
+  @IsString({
+    message: 'El tipo de identificación debe ser una cadena de texto',
+  })
   tipoid?: string;
 
   @IsNotEmpty({ message: 'El número de identificación es requerido' })
-  @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
+  @IsString({
+    message: 'El número de identificación debe ser una cadena de texto',
+  })
   numeroid!: string;
 
+  @IsOptional()
+  @IsNumber({}, { message: 'El ID de la ciudad debe ser un número' })
+  city_id?: number;
 
   @IsOptional()
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
   telefono?: string;
 
   @IsOptional()
-  @IsISO8601({}, { message: 'La fecha de nacimiento debe tener un formato válido (YYYY-MM-DD)' })
+  @IsISO8601(
+    {},
+    {
+      message:
+        'La fecha de nacimiento debe tener un formato válido (YYYY-MM-DD)',
+    }
+  )
   fecha_nacimiento?: string;
 
   @IsOptional()
@@ -176,6 +214,10 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsString({ message: 'El NIT debe ser una cadena de texto' })
   nit?: string;
+
+  @IsOptional()
+  @IsString({ message: 'La URL de la foto debe ser una cadena de texto' })
+  public_name?: string;
 
   @IsOptional()
   @IsString({ message: 'La URL de la foto debe ser una cadena de texto' })

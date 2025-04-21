@@ -89,6 +89,9 @@ export class Patient {
   @Column({ nullable: true })
   city_id?: number;
 
+  @Column({ nullable: true })
+  public_name?: string;
+
   @CreateDateColumn()
   created_at!: Date;
 

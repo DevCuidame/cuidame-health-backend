@@ -14,6 +14,7 @@ import {
   PaginationParams,
 } from '../../core/interfaces/response.interface';
 import { CodeRepository } from '../code/code.repository';
+import { AppDataSource } from '../../core/config/database';
 
 export class PatientService {
   private patientRepository: PatientRepository;
@@ -38,7 +39,6 @@ export class PatientService {
     patientData: CreatePatientDto,
     caregiverId: number
   ): Promise<Patient> {
-    console.log('🚀 ~ PatientService ~ patientData:', patientData);
     try {
       // Verificar si ya existe un paciente con el mismo número de identificación
       const patientExists = await this.patientRepository.existsByNumeroid(
@@ -49,7 +49,7 @@ export class PatientService {
           `Ya existe un paciente con el número de identificación`
         );
       }
-
+  
       // Obtener un código disponible desde la tabla codes
       if (!patientData.code) {
         const hashcode = await this.codeRepository.getAvailableCodeForPatient();
@@ -58,23 +58,23 @@ export class PatientService {
         const code = await this.codeRepository.findByCode(patientData.code);
         patientData.code = code!.hashcode;
       }
-
+  
       const {
         id, // Eliminamos cualquier id que venga
         public_name, // Eliminamos esta propiedad que no está en la entidad
         departamento: departamentoParam,
         ...cleanedData
       } = patientData as any;
-
+  
       // Convertimos departamento a string si viene como número
       const departamento =
         typeof departamentoParam === 'number'
           ? departamentoParam.toString()
           : departamentoParam;
-
+  
       // Extraer imagen base64 si existe
       const imageBase64 = patientData.imagebs64;
-
+  
       const patient = await this.patientRepository.create({
         ...cleanedData,
         departamento,
@@ -83,7 +83,7 @@ export class PatientService {
         created_at: new Date(),
         updated_at: new Date(),
       });
-
+  
       // Si hay imagen, guardarla y actualizar la URL de la foto
       let photoUrl = '';
       if (imageBase64) {
@@ -94,7 +94,7 @@ export class PatientService {
             'patients', // Carpeta: patients
             'profile' // Nombre base: profile
           );
-
+  
           if (photoUrl) {
             // Actualizar la URL en la base de datos
             await this.patientRepository.update(
@@ -105,16 +105,16 @@ export class PatientService {
               },
               'Paciente'
             );
-
+  
             await this.patientRepository.update(
               patient.id,
               {
                 imagebs64: null,
                 updated_at: new Date(),
               },
-              'Paciente	'
+              'Paciente'
             );
-
+  
             // Actualizar el objeto del paciente antes de devolverlo
             patient.photourl = photoUrl;
           }
@@ -123,8 +123,18 @@ export class PatientService {
           // No fallamos el proceso completo si hay error en la imagen
         }
       }
-
-      return patient;
+  
+      // Obtener nombres reales de ciudad y departamento
+      const { cityName, departmentName } = await this.getLocationInfo(patient.city_id);
+  
+      // Crear un objeto enriquecido para devolver al cliente
+      const enrichedPatient = {
+        ...patient,
+        ciudad: cityName || patient.ciudad,
+        department_name: departmentName || patient.departamento
+      };
+  
+      return enrichedPatient as Patient;
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw new BadRequestError(
@@ -134,6 +144,7 @@ export class PatientService {
       throw error;
     }
   }
+  
 
   /**
    * Obtener un paciente por ID
@@ -240,8 +251,8 @@ export class PatientService {
     caregiverId?: number
   ): Promise<Patient> {
     // Verificar permisos
-    await this.getPatientById(patientId, caregiverId);
-
+    const patient = await this.getPatientById(patientId, caregiverId);
+  
     // Si se está actualizando el número de identificación, verificar que no exista otro paciente con ese número
     if (patientData.numeroid) {
       const patientExists = await this.patientRepository.existsByNumeroid(
@@ -254,18 +265,58 @@ export class PatientService {
         );
       }
     }
-
+  
+    // Extraer datos de imagen si existe
+    const { imagebs64, ...dataToUpdate } = patientData;
+  
+    // Preparar objeto con datos a actualizar
+    const updateData = {
+      ...dataToUpdate,
+      updated_at: new Date(),
+    };
+  
+    // Si se proporciona una nueva imagen, procesarla
+    if (imagebs64) {
+      // Verificar si existe una imagen previa y eliminarla
+      if (patient.photourl) {
+        await FileUploadService.deleteFile(patient.photourl);
+      }
+  
+      // Guardar nueva imagen
+      try {
+        const photoUrl = await FileUploadService.saveBase64Image(
+          imagebs64,
+          'patients',
+          'profile'
+        );
+  
+        // Añadir URL de la foto al objeto de actualización
+        updateData.photourl = photoUrl;
+      } catch (error) {
+        console.error('Error al guardar imagen de paciente:', error);
+        // No fallamos el proceso completo si hay error en la imagen
+      }
+    }
+  
     // Actualizar paciente
     const updatedPatient = await this.patientRepository.update(
       patientId,
-      {
-        ...patientData,
-        updated_at: new Date(),
-      },
+      updateData,
       'Paciente'
     );
-
-    return updatedPatient;
+  
+    // Obtener nombres reales de ciudad y departamento
+    const cityId = updateData.city_id || updatedPatient.city_id;
+    const { cityName, departmentName } = await this.getLocationInfo(cityId);
+  
+    // Crear un objeto enriquecido para devolver al cliente
+    const enrichedPatient = {
+      ...updatedPatient,
+      ciudad: cityName || updatedPatient.ciudad,
+      department_name: departmentName || updatedPatient.departamento
+    };
+  
+    return enrichedPatient as Patient;
   }
 
   /**
@@ -360,4 +411,40 @@ export class PatientService {
       caregiverId
     );
   }
+
+
+  /**
+ * Obtener información de localización (ciudad y departamento) basado en el city_id
+ * @param cityId ID de la ciudad
+ * @returns Objeto con los nombres de ciudad y departamento
+ */
+private async getLocationInfo(cityId?: number): Promise<{ cityName: string, departmentName: string }> {
+  let cityName = "";
+  let departmentName = "";
+  
+  // Si hay city_id, intentar obtener el nombre real de la ciudad y departamento
+  if (cityId) {
+    try {
+      // Obtener datos de la ciudad desde el repositorio de ubicaciones
+      const locationRepository = AppDataSource.getRepository('townships');
+      const cityData = await locationRepository.findOne({
+        where: { id: cityId },
+        relations: ['department']
+      });
+
+      if (cityData) {
+        cityName = cityData.name;
+        if (cityData.department) {
+          departmentName = cityData.department.name;
+        }
+      }
+    } catch (error) {
+      console.error('Error al obtener información de localización:', error);
+      // Devolver valores por defecto en caso de error
+    }
+  }
+  
+  return { cityName, departmentName };
+}
+
 }

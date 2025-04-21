@@ -23,6 +23,7 @@ import { User } from '@models/user.model';
 import { HealthRepository } from '../../modules/health/health.repository';
 import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
 import { FileUploadService } from '../../utils/file-upload.util';
+import { AppDataSource } from '../../core/config/database';
 
 
 export class AuthService {
@@ -43,129 +44,160 @@ export class AuthService {
    * @param credentials Credenciales de inicio de sesión
    * @returns Respuesta de autenticación con token y datos de usuario
    */
-  async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
-    const { email, password } = credentials;
+ // En src/modules/auth/auth.service.ts
+// Modificar el método login para incluir información de ciudad y departamento
 
-    // Buscar usuario por email incluyendo el campo password
-    const user = await this.userRepository.findByEmail(email, true);
-    if (!user) {
-      throw new UnauthorizedError('Credenciales inválidas');
-    }
+async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
+  const { email, password } = credentials;
 
-    // Verificar contraseña
-    if (!user.password) {
-      throw new UnauthorizedError(
-        'Este usuario no tiene contraseña configurada'
-      );
-    }
-
-    // Verificar contraseña (compatible con MD5 y PBKDF2)
-    const isPasswordValid = PasswordService.verifyPassword(
-      password,
-      user.password
-    );
-    if (!isPasswordValid) {
-      throw new UnauthorizedError('Credenciales inválidas');
-    }
-
-    // Si la verificación fue exitosa, verificar si necesitamos actualizar el hash
-    if (PasswordService.needsUpgrade(user.password)) {
-      // Migrar la contraseña al nuevo formato de manera silenciosa
-      const newHash = PasswordService.hashPassword(password);
-      await this.userRepository.update(
-        user.id,
-        {
-          password: newHash,
-          updated_at: new Date(),
-        },
-        'Usuario'
-      );
-    }
-
-    let message = 'Sesión iniciada exitosamente';
-    if (!user.verificado) {
-      message = 'emailnoverificado';
-    }
-
-    // Generar token JWT
-    const token = this.generateToken(user);
-    
-    // Generar refresh token
-    const refreshToken = this.generateRefreshToken(user);
-
-    // Actualizar token de sesión en la base de datos
-    await this.userRepository.updateSessionToken(user.id, token);
-
-    // Obtener el conteo de pacientes a cargo
-    const patientCount = await this.patientRepository.count({
-      where: { a_cargo_id: user.id }
-    });
-
-    // Obtener pacientes a cargo del usuario
-    let cared_persons = await this.patientRepository.findAll({
-      where: { a_cargo_id: user.id }
-    });
-
-    // Añadir datos de salud para cada paciente a cargo
-    if (cared_persons && cared_persons.length > 0) {
-      const enrichedPatients = await Promise.all(
-        cared_persons.map(async (patient) => {
-          // Obtener datos de salud para el paciente
-          const [
-            latestVitals,
-            medicalInfo
-          ] = await Promise.all([
-            this.healthRepository.getLatestVitals(patient.id),
-            this.medicalInfoRepository.getAllMedicalInfo(patient.id)
-          ]);
-
-          // Crear un objeto que combine el paciente con sus datos de salud
-          return {
-            ...patient,
-            health_data: {
-              vitals: latestVitals,
-              medical_info: medicalInfo
-            }
-          };
-        })
-      );
-
-      // Reemplazar la lista original con la enriquecida
-      cared_persons = enrichedPatients;
-    }
-
-    // Crear objeto de respuesta
-    const userData = {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        lastname: user.lastname,
-        verificado: user.verificado,
-        phone: user.phone,
-        typeid: user.typeid,
-        numberid: user.numberid,
-        address: user.address,
-        city_id: user.city_id,
-        pubname: user.pubname,
-        privname: user.privname,
-        imagebs64: user.imagebs64,
-      },
-      roles: user.userRoles?.map((ur) => ur.role.name) || [],
-      access_token: token,
-      refresh_token: refreshToken,
-      patientCount: patientCount,
-      cared_persons: cared_persons,
-    };
-
-    return {
-      success: true,
-      message,
-      data: userData,
-      token,
-      refresh_token: refreshToken
-    };
+  // Buscar usuario por email incluyendo el campo password
+  const user = await this.userRepository.findByEmail(email, true);
+  if (!user) {
+    throw new UnauthorizedError('Credenciales inválidas');
   }
+
+  // Verificar contraseña
+  if (!user.password) {
+    throw new UnauthorizedError(
+      'Este usuario no tiene contraseña configurada'
+    );
+  }
+
+  // Verificar contraseña (compatible con MD5 y PBKDF2)
+  const isPasswordValid = PasswordService.verifyPassword(
+    password,
+    user.password
+  );
+  if (!isPasswordValid) {
+    throw new UnauthorizedError('Credenciales inválidas');
+  }
+
+  // Si la verificación fue exitosa, verificar si necesitamos actualizar el hash
+  if (PasswordService.needsUpgrade(user.password)) {
+    // Migrar la contraseña al nuevo formato de manera silenciosa
+    const newHash = PasswordService.hashPassword(password);
+    await this.userRepository.update(
+      user.id,
+      {
+        password: newHash,
+        updated_at: new Date(),
+      },
+      'Usuario'
+    );
+  }
+
+  let message = 'Sesión iniciada exitosamente';
+  if (!user.verificado) {
+    message = 'emailnoverificado';
+  }
+
+  // Generar token JWT
+  const token = this.generateToken(user);
+  
+  // Generar refresh token
+  const refreshToken = this.generateRefreshToken(user);
+
+  // Actualizar token de sesión en la base de datos
+  await this.userRepository.updateSessionToken(user.id, token);
+
+  // Obtener el conteo de pacientes a cargo
+  const patientCount = await this.patientRepository.count({
+    where: { a_cargo_id: user.id }
+  });
+
+  // Obtener pacientes a cargo del usuario
+  let cared_persons = await this.patientRepository.findAll({
+    where: { a_cargo_id: user.id }
+  });
+
+  // Añadir datos de salud y localización para cada paciente a cargo
+  if (cared_persons && cared_persons.length > 0) {
+    const enrichedPatients = await Promise.all(
+      cared_persons.map(async (patient) => {
+        // Obtener datos de salud para el paciente
+        const [
+          latestVitals,
+          medicalInfo
+        ] = await Promise.all([
+          this.healthRepository.getLatestVitals(patient.id),
+          this.medicalInfoRepository.getAllMedicalInfo(patient.id)
+        ]);
+
+        // Obtener información detallada de ciudad y departamento
+        let cityName = patient.ciudad || "";
+        let departmentName = patient.departamento || "";
+
+        // Si hay city_id, intentar obtener el nombre real de la ciudad y departamento
+        if (patient.city_id) {
+          try {
+            // Obtener datos de la ciudad desde el repositorio de ubicaciones
+            const locationRepository = AppDataSource.getRepository('townships');
+            const cityData = await locationRepository.findOne({
+              where: { id: patient.city_id },
+              relations: ['department']
+            });
+
+            if (cityData) {
+              cityName = cityData.name;
+              if (cityData.department) {
+                departmentName = cityData.department.name;
+              }
+            }
+          } catch (error) {
+            console.error('Error al obtener información de localización:', error);
+            // Mantener los valores originales en caso de error
+          }
+        }
+
+        // Crear un objeto que combine el paciente con sus datos de salud y localización
+        return {
+          ...patient,
+          ciudad: cityName,
+          department_name: departmentName,
+          health_data: {
+            vitals: latestVitals,
+            medical_info: medicalInfo
+          }
+        };
+      })
+    );
+
+    // Reemplazar la lista original con la enriquecida
+    cared_persons = enrichedPatients;
+  }
+
+  // Crear objeto de respuesta
+  const userData = {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      verificado: user.verificado,
+      phone: user.phone,
+      typeid: user.typeid,
+      numberid: user.numberid,
+      address: user.address,
+      city_id: user.city_id,
+      pubname: user.pubname,
+      privname: user.privname,
+      imagebs64: user.imagebs64,
+    },
+    roles: user.userRoles?.map((ur) => ur.role.name) || [],
+    access_token: token,
+    refresh_token: refreshToken,
+    patientCount: patientCount,
+    cared_persons: cared_persons,
+  };
+
+  return {
+    success: true,
+    message,
+    data: userData,
+    token,
+    refresh_token: refreshToken
+  };
+}
 
   /**
    * Refrescar token de acceso usando un refresh token
