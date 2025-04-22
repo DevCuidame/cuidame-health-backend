@@ -23,7 +23,8 @@ export const setupExpress = (): Application => {
 
   // Configure CORS con opciones específicas
   const corsOptions = {
-    origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
+    // origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
