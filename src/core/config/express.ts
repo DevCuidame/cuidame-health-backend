@@ -1,9 +1,11 @@
+// src/core/config/express.ts
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import config from './environment';
 import { errorMiddleware } from '../../middlewares/error.middleware';
+import { corsMiddleware } from '../../middlewares/cors.middleware';
 import path from 'path';
 
 export const setupExpress = (): Application => {
@@ -21,20 +23,22 @@ export const setupExpress = (): Application => {
     })
   );
 
-  // Configure CORS con opciones específicas
+  // Apply custom CORS middleware first (before routes)
+  app.use(corsMiddleware);
+
+  // Standard CORS middleware as a fallback
   const corsOptions = {
-    // origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
-    origin: '*',
+    origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,
   };
-
-  // Aplicar middleware CORS con opciones
   app.use(cors(corsOptions));
-
+  
+  // Handle OPTIONS requests explicitly
+  app.options('*', cors(corsOptions));
 
   // Logging
   if (config.env === 'development') {
@@ -43,6 +47,7 @@ export const setupExpress = (): Application => {
     app.use(morgan('combined'));
   }
 
+  // Static folder for uploads with CORS headers
   app.use('/uploads', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');

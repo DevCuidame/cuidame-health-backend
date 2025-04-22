@@ -8,6 +8,7 @@ import logger from './utils/logger';
 // Inicializar aplicación Express
 const app = setupExpress();
 
+
 // Definir ruta de la API
 app.use(config.server.apiPrefix, routes);
 

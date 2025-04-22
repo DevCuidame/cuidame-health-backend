@@ -1,0 +1,35 @@
+// src/middlewares/cors.middleware.ts
+import { Request, Response, NextFunction } from 'express';
+import config from '../core/config/environment';
+
+export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  // Define allowed origins
+  const allowedOrigins = [
+    'http://localhost:8100', 
+    'http://localhost:4200', 
+    'https://health.cuidame.tech'
+  ];
+
+  // Get the origin from the request
+  const origin = req.headers.origin;
+
+  // Check if the origin is allowed
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (config.env === 'development') {
+    // In development, allow any origin
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  // Set other CORS headers
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  next();
+};
