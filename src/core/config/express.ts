@@ -32,7 +32,12 @@ export const setupExpress = (): Application => {
   };
 
   // Aplicar middleware CORS con opciones
-  app.use(cors(corsOptions));
+  // app.use(cors(corsOptions));
+
+  app.use(cors({
+    origin: true, // Esto permite cualquier origen
+    credentials: true
+  }));
 
   // Logging
   if (config.env === 'development') {
