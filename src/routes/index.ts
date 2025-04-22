@@ -10,7 +10,35 @@ import codeRoutes from '../modules/code/code.routes';
 import vitalsRoutes from '../modules/vitals/vitals.routes';
 import contactRoutes from '../modules/contact/contact.routes';
 
+import express from 'express';
+
+
 const router = Router();
+
+// Test router for CORS testing purposes only - remove in production 
+// const testRouter = express.Router();
+
+// testRouter.get('/cors-test', (req, res) => {
+//   res.json({
+//     success: true,
+//     message: 'CORS is working correctly!',
+//     headers: {
+//       'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+//       'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+//       'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
+//     },
+//     origin: req.headers.origin,
+//     date: new Date().toISOString()
+//   });
+// });
+
+// testRouter.options('/cors-test', (req, res) => {
+//   res.status(204).end();
+// });
+
+// router.use('/test', testRouter);
+
+// ..............................................................................................
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);

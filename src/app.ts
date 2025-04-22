@@ -4,10 +4,16 @@ import { AppDataSource } from './core/config/database';
 import routes from './routes';
 import config from './core/config/environment';
 import logger from './utils/logger';
+import { corsMiddleware } from './middlewares/cors.middleware';
 
 // Inicializar aplicación Express
-const app = setupExpress();
+const app = express();
 
+// Apply CORS middleware first, before anything else
+app.use(corsMiddleware);
+
+// Then setup other Express configurations
+const configuredApp = setupExpress(app);
 
 // Definir ruta de la API
 app.use(config.server.apiPrefix, routes);

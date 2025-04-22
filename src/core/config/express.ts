@@ -5,11 +5,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import config from './environment';
 import { errorMiddleware } from '../../middlewares/error.middleware';
-import { corsMiddleware } from '../../middlewares/cors.middleware';
 import path from 'path';
 
-export const setupExpress = (): Application => {
-  const app: Application = express();
+export const setupExpress = (existingApp?: Application): Application => {
+  const app: Application = existingApp || express();
 
   // Middleware básicos
   app.use(express.json({ limit: '10mb' }));
@@ -22,9 +21,6 @@ export const setupExpress = (): Application => {
       contentSecurityPolicy: false 
     })
   );
-
-  // Apply custom CORS middleware first (before routes)
-  app.use(corsMiddleware);
 
   // Standard CORS middleware as a fallback
   const corsOptions = {
