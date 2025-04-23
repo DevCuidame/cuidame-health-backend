@@ -7,6 +7,13 @@ export class PatientRepository extends BaseRepository<Patient> {
     super(Patient);
   }
 
+  private formatPatientImageUrl(patient: Patient): Patient {
+    if (patient.photourl && patient.photourl.startsWith('/home/developer/uploads/')) {
+      patient.photourl = patient.photourl.replace('/home/developer/uploads/', '/uploads/');
+    }
+    return patient;
+  }
+
   /**
    * Verifica si ya existe un paciente con el mismo número de identificación
    * @param numeroid Número de identificación a verificar
@@ -56,13 +63,16 @@ export class PatientRepository extends BaseRepository<Patient> {
    * @returns Lista de pacientes a cargo del cuidador
    */
   async findByCaregiverId(caregiverId: number): Promise<Patient[]> {
-    return await this.repository.find({
+    const patients = await this.repository.find({
       where: { a_cargo_id: caregiverId },
       order: { 
         apellido: 'ASC',
         nombre: 'ASC'
       }
     });
+    
+    // Formatear las URLs de las imágenes
+    return patients.map(patient => this.formatPatientImageUrl(patient));
   }
 
   /**

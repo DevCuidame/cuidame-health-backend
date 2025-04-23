@@ -104,9 +104,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   });
 
   // Obtener pacientes a cargo del usuario
-  let cared_persons = await this.patientRepository.findAll({
-    where: { a_cargo_id: user.id }
-  });
+  let cared_persons = await this.patientRepository.findByCaregiverId(user.id);
 
   // Añadir datos de salud y localización para cada paciente a cargo
   if (cared_persons && cared_persons.length > 0) {
