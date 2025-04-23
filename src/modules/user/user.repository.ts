@@ -18,8 +18,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByEmail(email: string, includePassword: boolean = false): Promise<User | null> {
     const options: FindOneOptions<User> = {
-      where: { email },
-      relations: ['userRoles', 'userRoles.role']
+      where: { email }
     };
   
     if (includePassword) {
@@ -31,6 +30,8 @@ export class UserRepository extends BaseRepository<User> {
         lastname: true,
         verificado: true,
         phone: true,
+        gender: true,
+        birth_date: true,
         typeid: true,
         numberid: true,
         address: true,
