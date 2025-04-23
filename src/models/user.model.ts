@@ -18,9 +18,6 @@ export class User {
   @Column()
   lastname!: string;
 
-  @Column({ nullable: true })
-  typeperson?: string;
-
   @Column()
   typeid!: string;
 

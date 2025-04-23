@@ -25,10 +25,6 @@ export class CreateUserDto {
   @IsString({ message: 'La fecha de nacimiento debe ser una cadena de texto' })
   birth_date?: string;  
 
-  @IsOptional()
-  @IsString({ message: 'El tipo de persona debe ser una cadena de texto' })
-  typeperson?: string;
-
   @IsNotEmpty({ message: 'El teléfono es requerido' })
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
   @Matches(/^\d{7,15}$/, { message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos' })
