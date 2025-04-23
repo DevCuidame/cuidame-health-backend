@@ -183,7 +183,6 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       privname: user.privname,
       imagebs64: user.imagebs64,
     },
-    roles: user.userRoles?.map((ur) => ur.role.name) || [],
     access_token: token,
     refresh_token: refreshToken,
     patientCount: patientCount,
@@ -260,7 +259,6 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.userRoles?.[0]?.role.name || 'user',
       type: 'refresh',
       token_version: 1, // Versión del token para invalidación masiva si es necesario
     };
@@ -489,7 +487,6 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.userRoles?.[0]?.role.name || 'user',
     };
 
     // @ts-ignore - Forzar a TypeScript a ignorar este error específico
