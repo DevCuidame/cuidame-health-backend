@@ -9,6 +9,16 @@ import { corsMiddleware } from './middlewares/cors.middleware';
 // Inicializar aplicación Express
 const app = express();
 
+// Explicitly handle OPTIONS requests at the application level
+app.options('*', (req, res) => {
+  // These headers must be set for OPTIONS responses
+  res.header('Access-Control-Allow-Origin', 'https://health.cuidame.tech');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(204).end();
+});
+
 // Apply CORS middleware first, before anything else
 app.use(corsMiddleware);
 

@@ -9,6 +9,22 @@ import path from 'path';
 
 export const setupExpress = (existingApp?: Application): Application => {
   const app: Application = existingApp || express();
+  
+  // Define CORS options
+  const corsOptions = {
+    origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  };
+  
+  // Apply CORS middleware first
+  app.use(cors(corsOptions));
+  
+  // Also handle OPTIONS requests explicitly
+  app.options('*', cors(corsOptions));
 
   // Middleware básicos
   app.use(express.json({ limit: '10mb' }));
@@ -21,20 +37,6 @@ export const setupExpress = (existingApp?: Application): Application => {
       contentSecurityPolicy: false 
     })
   );
-
-  // Standard CORS middleware as a fallback
-  const corsOptions = {
-    origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  };
-  app.use(cors(corsOptions));
-  
-  // Handle OPTIONS requests explicitly
-  app.options('*', cors(corsOptions));
 
   // Logging
   if (config.env === 'development') {

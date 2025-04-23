@@ -15,10 +15,9 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   console.log('Incoming request from origin:', origin);
 
-  // Check if the origin is allowed
+  // Check if the origin is allowed or if we're in development
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    // Set other CORS headers
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -34,7 +33,8 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS request');
-    return res.status(204).end();
+    res.status(204).end();
+    return;
   }
 
   next();
