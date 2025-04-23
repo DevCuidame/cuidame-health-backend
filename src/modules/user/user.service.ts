@@ -131,7 +131,7 @@ export class UserService {
     await this.getUserById(userId);
     
     // Asignar rol
-    await this.userRepository.assignRole(userId, roleId);
+    // await this.userRepository.assignRole(userId, roleId);
     
     return {
       success: true,
@@ -150,11 +150,11 @@ export class UserService {
     await this.getUserById(userId);
     
     // Eliminar rol
-    const result = await this.userRepository.removeRole(userId, roleId);
+    // const result = await this.userRepository.removeRole(userId, roleId);
     
-    if (!result) {
-      throw new NotFoundError('Rol no encontrado para este usuario');
-    }
+    // if (!result) {
+    //   throw new NotFoundError('Rol no encontrado para este usuario');
+    // }
     
     return {
       success: true,

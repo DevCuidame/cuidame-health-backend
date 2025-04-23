@@ -2,7 +2,6 @@ import { FindOneOptions, FindOptionsWhere, ILike, In } from 'typeorm';
 import { BaseRepository } from '../../core/repositories/base.repository';
 import { UserFilterOptions } from './user.interface';
 import { NotFoundError } from '../../utils/error-handler';
-import { UserRole } from '../../models/user-role.model';
 import { User } from '../../models/user.model';
 
 export class UserRepository extends BaseRepository<User> {
@@ -177,26 +176,26 @@ export class UserRepository extends BaseRepository<User> {
    * @param roleId ID del rol
    * @returns El registro UserRole creado
    */
-  async assignRole(userId: number, roleId: number): Promise<UserRole> {
-    const userRoleRepository = this.repository.manager.getRepository(UserRole);
+  // async assignRole(userId: number, roleId: number): Promise<UserRole> {
+  //   const userRoleRepository = this.repository.manager.getRepository(UserRole);
     
-    // Verificar si ya existe esta asignación
-    const existingAssignment = await userRoleRepository.findOne({
-      where: { user_id: userId, role_id: roleId }
-    });
+  //   // Verificar si ya existe esta asignación
+  //   const existingAssignment = await userRoleRepository.findOne({
+  //     where: { user_id: userId, role_id: roleId }
+  //   });
     
-    if (existingAssignment) {
-      return existingAssignment;
-    }
+  //   if (existingAssignment) {
+  //     return existingAssignment;
+  //   }
     
-    // Crear nueva asignación
-    const userRole = userRoleRepository.create({
-      user_id: userId,
-      role_id: roleId
-    });
+  //   // Crear nueva asignación
+  //   const userRole = userRoleRepository.create({
+  //     user_id: userId,
+  //     role_id: roleId
+  //   });
     
-    return await userRoleRepository.save(userRole);
-  }
+  //   return await userRoleRepository.save(userRole);
+  // }
 
   /**
    * Elimina un rol de un usuario
@@ -204,15 +203,15 @@ export class UserRepository extends BaseRepository<User> {
    * @param roleId ID del rol
    * @returns True si se eliminó correctamente
    */
-  async removeRole(userId: number, roleId: number): Promise<boolean> {
-    const userRoleRepository = this.repository.manager.getRepository(UserRole);
-    const result = await userRoleRepository.delete({
-      user_id: userId,
-      role_id: roleId
-    });
+  // async removeRole(userId: number, roleId: number): Promise<boolean> {
+  //   const userRoleRepository = this.repository.manager.getRepository(UserRole);
+  //   const result = await userRoleRepository.delete({
+  //     user_id: userId,
+  //     role_id: roleId
+  //   });
     
-    return result.affected !== undefined && result.affected !== null && result.affected > 0;
-  }
+  //   return result.affected !== undefined && result.affected !== null && result.affected > 0;
+  // }
 
   /**
    * Actualiza el token de sesión del usuario
