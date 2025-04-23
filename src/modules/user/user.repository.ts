@@ -38,6 +38,7 @@ export class UserRepository extends BaseRepository<User> {
         pubname: true,
         privname: true,
         imagebs64: true,
+        path: true,
       };
     }
   
