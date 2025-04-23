@@ -80,8 +80,6 @@ export class Patient {
   @Column({ nullable: true })
   image?: string;
 
-  @Column({ nullable: true })
-  nit?: string;
 
   @Column({ nullable: true })
   city_id?: number;

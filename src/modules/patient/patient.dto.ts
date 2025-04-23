@@ -204,10 +204,6 @@ export class UpdatePatientDto {
   image?: string;
 
   @IsOptional()
-  @IsString({ message: 'El NIT debe ser una cadena de texto' })
-  nit?: string;
-
-  @IsOptional()
   @IsString({ message: 'La URL de la foto debe ser una cadena de texto' })
   public_name?: string;
 
