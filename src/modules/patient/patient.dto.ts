@@ -101,10 +101,6 @@ export class CreatePatientDto {
   image?: string;
 
   @IsOptional()
-  @IsString({ message: 'La empresa debe ser una cadena de texto' })
-  enterprise?: string;
-
-  @IsOptional()
   @IsString({ message: 'El NIT debe ser una cadena de texto' })
   nit?: string;
 
@@ -206,10 +202,6 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsString({ message: 'La imagen debe ser una cadena de texto' })
   image?: string;
-
-  @IsOptional()
-  @IsString({ message: 'La empresa debe ser una cadena de texto' })
-  enterprise?: string;
 
   @IsOptional()
   @IsString({ message: 'El NIT debe ser una cadena de texto' })
