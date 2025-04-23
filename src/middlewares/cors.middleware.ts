@@ -13,7 +13,6 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
   // Get the origin from the request
   const origin = req.headers.origin;
 
-  console.log('Incoming request from origin:', origin);
 
   // Check if the origin is allowed or if we're in development
   if (origin && allowedOrigins.includes(origin)) {

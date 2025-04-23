@@ -44,8 +44,6 @@ export class AuthService {
    * @param credentials Credenciales de inicio de sesión
    * @returns Respuesta de autenticación con token y datos de usuario
    */
- // En src/modules/auth/auth.service.ts
-// Modificar el método login para incluir información de ciudad y departamento
 
 async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   const { email, password } = credentials;
@@ -114,6 +112,9 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   if (cared_persons && cared_persons.length > 0) {
     const enrichedPatients = await Promise.all(
       cared_persons.map(async (patient) => {
+        // Remove imagebs64 from patient object to reduce size
+        const { imagebs64, ...patientWithoutImage } = patient;
+        
         // Obtener datos de salud para el paciente
         const [
           latestVitals,
@@ -151,7 +152,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
 
         // Crear un objeto que combine el paciente con sus datos de salud y localización
         return {
-          ...patient,
+          ...patientWithoutImage,
           ciudad: cityName,
           department_name: departmentName,
           health_data: {
@@ -166,7 +167,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     cared_persons = enrichedPatients;
   }
 
-  // Crear objeto de respuesta
+  // Crear objeto de respuesta (exclude imagebs64 from user data as well)
   const userData = {
     user: {
       id: user.id,
@@ -181,7 +182,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       city_id: user.city_id,
       pubname: user.pubname,
       privname: user.privname,
-      imagebs64: user.imagebs64,
+      // imagebs64 removed to reduce localStorage size
     },
     access_token: token,
     refresh_token: refreshToken,
