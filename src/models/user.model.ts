@@ -78,7 +78,4 @@ export class User {
   @Column({ nullable: true })
   path?: string;
 
-  // Relaciones
-  @OneToMany(() => UserRole, userRole => userRole.user)
-  userRoles!: UserRole[];
 }
