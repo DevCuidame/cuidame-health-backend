@@ -9,20 +9,24 @@ import path from 'path';
 
 export const setupExpress = (existingApp?: Application): Application => {
   const app: Application = existingApp || express();
-  
+
   // Define CORS options
   const corsOptions = {
-    origin: ['http://localhost:8100', 'http://localhost:4200', 'https://health.cuidame.tech'],
+    origin: [
+      'http://localhost:8100',
+      'http://localhost:4200',
+      'https://health.cuidame.tech',
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,
   };
-  
+
   // Apply CORS middleware first
   app.use(cors(corsOptions));
-  
+
   // Also handle OPTIONS requests explicitly
   app.options('*', cors(corsOptions));
 
@@ -33,8 +37,8 @@ export const setupExpress = (existingApp?: Application): Application => {
   // Seguridad - Modificar Helmet para permitir imágenes
   app.use(
     helmet({
-      crossOriginResourcePolicy: { policy: "cross-origin" }, 
-      contentSecurityPolicy: false 
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: false,
     })
   );
 
@@ -44,6 +48,9 @@ export const setupExpress = (existingApp?: Application): Application => {
   } else {
     app.use(morgan('combined'));
   }
+
+  // Carpeta estática para archivos subidos
+  app.use('/uploads', express.static('/home/developer/uploads'));
 
   // Static folder for uploads with CORS headers
   app.use('/uploads', (req, res, next) => {
@@ -60,7 +67,7 @@ export const setupExpress = (existingApp?: Application): Application => {
         // Agregar encabezados adicionales específicos para archivos estáticos
         res.set('Access-Control-Allow-Origin', '*');
         res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-      }
+      },
     })
   );
 
