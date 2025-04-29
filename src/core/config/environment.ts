@@ -31,6 +31,14 @@ interface Config {
     path: string;
     maxSize: number; // en MB
   };
+  email: {
+    host: string;
+    port: number;
+    user: string;
+    secure: boolean;
+    password: string;
+    from: string;
+  }
 }
 
 // Configuración por defecto
@@ -61,6 +69,14 @@ const config: Config = {
     path: process.env.FILE_UPLOAD_PATH || './uploads',
     maxSize: parseInt(process.env.MAX_FILE_SIZE || '10', 10),
   },
+  email: {
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || '587', 10),
+    user: process.env.EMAIL_USER || '  email',
+    secure: process.env.EMAIL_SECURE === 'true',
+    password: process.env.EMAIL_PASSWORD || 'PASSWORD',
+    from: process.env.EMAIL_FROM || 'EMAIL',
+  }
 };
 
 // Validar configuración crítica en producción

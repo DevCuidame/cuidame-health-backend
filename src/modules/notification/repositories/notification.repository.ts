@@ -1,6 +1,6 @@
 // src/modules/notification/notification.repository.ts
-import { BaseRepository } from '../../core/repositories/base.repository';
-import { Notification, NotificationStatus } from '../../models/notification.model';
+import { BaseRepository } from '../../../core/repositories/base.repository';
+import { Notification, NotificationStatus } from '../../../models/notification.model';
 
 export class NotificationRepository extends BaseRepository<Notification> {
   constructor() {

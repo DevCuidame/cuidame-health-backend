@@ -523,3 +523,245 @@ CREATE INDEX idx_appointment_history_related_appointment_id ON appointment_histo
 
 -- Add a comment to describe the table
 COMMENT ON TABLE appointment_history IS 'Tracks all changes to appointments, including creations, cancellations, and rescheduling';
+
+
+
+
+-- Migration: Fase 5 - Sistema de Notificaciones Avanzado
+-- Fecha: 29/04/2025
+
+-- Actualizar tipos de notificaciones
+-- (Esta modificación requiere una comprobación previa, ya que el enumerado ya existe)
+DO $$
+BEGIN
+    -- Verificar si se necesita actualizar el tipo enum
+    IF EXISTS (
+        SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid
+        WHERE t.typname = 'notificationtype' AND n.nspname = 'public'
+    ) THEN
+        -- Actualizar el tipo enum solo si no contiene todos los nuevos valores
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum WHERE enumtypid = (
+                SELECT oid FROM pg_type WHERE typname = 'notificationtype'
+            ) AND enumlabel = 'appointment_summary'
+        ) THEN
+            -- Agregar los nuevos tipos de notificación
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'appointment_summary';
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'system_alert';
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'payment_confirmation';
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'payment_due';
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'system_maintenance';
+            ALTER TYPE NotificationType ADD VALUE IF NOT EXISTS 'survey_invitation';
+        END IF;
+    END IF;
+END
+$$;
+
+-- Crear tabla de plantillas de notificación
+CREATE TABLE IF NOT EXISTS notification_templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(100) NOT NULL UNIQUE,
+    type NotificationType NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    body_template TEXT NOT NULL,
+    variables JSONB,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Crear tabla de preferencias de notificación
+CREATE TABLE IF NOT EXISTS notification_preferences (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    notification_type NotificationType NOT NULL,
+    email_enabled BOOLEAN DEFAULT TRUE,
+    push_enabled BOOLEAN DEFAULT TRUE,
+    inapp_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, notification_type)
+);
+
+-- Crear tabla de cola de notificaciones
+CREATE TABLE IF NOT EXISTS notification_queue (
+    id SERIAL PRIMARY KEY,
+    notification_id INTEGER NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+    delivery_type VARCHAR(20) NOT NULL CHECK (delivery_type IN ('email', 'push', 'inapp')),
+    payload JSONB NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    retries INTEGER NOT NULL DEFAULT 0,
+    max_retries INTEGER NOT NULL DEFAULT 3,
+    next_retry TIMESTAMP,
+    error TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_status ON notification_queue(status);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_notification_id ON notification_queue(notification_id);
+
+-- Crear tabla de registro de entregas de notificaciones
+CREATE TABLE IF NOT EXISTS notification_delivery_logs (
+    id SERIAL PRIMARY KEY,
+    notification_id INTEGER NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+    delivery_type VARCHAR(20) NOT NULL CHECK (delivery_type IN ('email', 'push', 'inapp')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('success', 'failure')),
+    details TEXT,
+    recipient VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notification_delivery_logs_notification_id ON notification_delivery_logs(notification_id);
+
+-- Insertar algunas plantillas predeterminadas
+INSERT INTO notification_templates (name, code, type, subject, body_template, variables, is_active)
+VALUES
+    ('Confirmación de Cita', 'appointment_confirmation', 'appointment_confirmed', 
+     'Confirmación de su cita médica', 
+     '<p>Estimado/a {{patientName}},</p>
+      <p>Su cita ha sido confirmada para el <strong>{{appointmentDate}}</strong> a las <strong>{{appointmentTime}}</strong> con el profesional <strong>{{professionalName}}</strong>.</p>
+      <p>Tipo de cita: {{appointmentType}}</p>
+      <p>Si necesita cancelar o reprogramar su cita, por favor hágalo con al menos 24 horas de anticipación.</p>
+      <p>Gracias por confiar en nosotros.</p>',
+     '["patientName", "appointmentDate", "appointmentTime", "professionalName", "appointmentType"]',
+     TRUE),
+     
+    ('Recordatorio de Cita', 'appointment_reminder', 'appointment_reminder', 
+     'Recordatorio de su cita médica', 
+     '<p>Estimado/a {{patientName}},</p>
+      <p>Le recordamos que tiene una cita programada para <strong>mañana {{appointmentDate}}</strong> a las <strong>{{appointmentTime}}</strong> con el profesional <strong>{{professionalName}}</strong>.</p>
+      <p>Tipo de cita: {{appointmentType}}</p>
+      <p>Por favor, llegue con 15 minutos de anticipación.</p>
+      <p>Gracias por confiar en nosotros.</p>',
+     '["patientName", "appointmentDate", "appointmentTime", "professionalName", "appointmentType"]',
+     TRUE),
+     
+    ('Cancelación de Cita', 'appointment_cancellation', 'appointment_cancelled', 
+     'Cancelación de su cita médica', 
+     '<p>Estimado/a {{patientName}},</p>
+      <p>Lamentamos informarle que su cita programada para el <strong>{{appointmentDate}}</strong> a las <strong>{{appointmentTime}}</strong> con el profesional <strong>{{professionalName}}</strong> ha sido cancelada.</p>
+      <p>Motivo: {{cancellationReason}}</p>
+      <p>Por favor, contacte con nosotros para reprogramar su cita.</p>
+      <p>Lamentamos las molestias ocasionadas.</p>',
+     '["patientName", "appointmentDate", "appointmentTime", "professionalName", "cancellationReason"]',
+     TRUE),
+     
+    ('Reprogramación de Cita', 'appointment_rescheduled', 'appointment_rescheduled', 
+     'Reprogramación de su cita médica', 
+     '<p>Estimado/a {{patientName}},</p>
+      <p>Su cita ha sido reprogramada.</p>
+      <p><strong>Fecha/hora anterior:</strong> {{previousDate}} a las {{previousTime}}</p>
+      <p><strong>Nueva fecha/hora:</strong> {{newDate}} a las {{newTime}}</p>
+      <p><strong>Profesional:</strong> {{professionalName}}</p>
+      <p><strong>Tipo de cita:</strong> {{appointmentType}}</p>
+      <p>Si esta nueva fecha no le conviene, por favor contáctenos para encontrar una alternativa.</p>
+      <p>Gracias por su comprensión.</p>',
+     '["patientName", "previousDate", "previousTime", "newDate", "newTime", "professionalName", "appointmentType"]',
+     TRUE),
+     
+    ('Resumen Semanal', 'weekly_summary', 'appointment_summary', 
+     'Resumen semanal de sus citas', 
+     '<p>Estimado/a {{professionalName}},</p>
+      <p>Aquí está el resumen de sus citas para la próxima semana:</p>
+      <div>{{appointmentsList}}</div>
+      <p>Puede ver más detalles en su panel de control.</p>',
+     '["professionalName", "appointmentsList"]',
+     TRUE);
+
+-- Inicializar preferencias para usuarios existentes
+INSERT INTO notification_preferences (user_id, notification_type, email_enabled, push_enabled, inapp_enabled)
+SELECT u.id, t.type, TRUE, TRUE, TRUE
+FROM users u CROSS JOIN (
+    SELECT unnest(enum_range(NULL::NotificationType)) AS type
+) t
+WHERE NOT EXISTS (
+    SELECT 1 FROM notification_preferences np
+    WHERE np.user_id = u.id AND np.notification_type = t.type
+);
+
+-- Actualizar la tabla de notificaciones para nuevos campos
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS scheduled_for TIMESTAMP;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS template_id INTEGER REFERENCES notification_templates(id) ON DELETE SET NULL;
+
+-- Crear una función para limpiar automáticamente notificaciones y logs antiguos
+CREATE OR REPLACE FUNCTION clean_old_notifications()
+RETURNS integer AS $
+DECLARE
+    deleted_count integer;
+BEGIN
+    -- Eliminar registros de más de 90 días (personalizable)
+    WITH deleted AS (
+        DELETE FROM notifications
+        WHERE status = 'read' AND read_at < NOW() - INTERVAL '90 days'
+        RETURNING id
+    )
+    SELECT count(*) INTO deleted_count FROM deleted;
+    
+    -- Eliminar elementos de cola completados antiguos
+    DELETE FROM notification_queue
+    WHERE status = 'completed' AND updated_at < NOW() - INTERVAL '30 days';
+    
+    RETURN deleted_count;
+END;
+$ LANGUAGE plpgsql;
+
+-- Agregar índices para mejorar rendimiento
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id_status ON notifications(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_notifications_scheduled_for ON notifications(scheduled_for) WHERE scheduled_for IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_notification_preferences_user_id ON notification_preferences(user_id);
+
+-- Crear una vista para notificaciones con estadísticas de entrega
+CREATE OR REPLACE VIEW notification_delivery_stats AS
+SELECT 
+    n.id,
+    n.user_id,
+    n.type,
+    n.title,
+    n.created_at,
+    n.sent_at,
+    n.status,
+    COUNT(DISTINCT CASE WHEN nq.delivery_type = 'email' AND nq.status = 'completed' THEN nq.id END) AS email_sent,
+    COUNT(DISTINCT CASE WHEN nq.delivery_type = 'push' AND nq.status = 'completed' THEN nq.id END) AS push_sent,
+    COUNT(DISTINCT CASE WHEN nq.delivery_type = 'inapp' AND nq.status = 'completed' THEN nq.id END) AS inapp_sent,
+    COUNT(DISTINCT CASE WHEN ndl.status = 'failure' THEN ndl.id END) AS delivery_failures
+FROM 
+    notifications n
+LEFT JOIN 
+    notification_queue nq ON n.id = nq.notification_id
+LEFT JOIN 
+    notification_delivery_logs ndl ON n.id = ndl.notification_id
+GROUP BY 
+    n.id, n.user_id, n.type, n.title, n.created_at, n.sent_at, n.status;
+
+-- Agregar trigger para actualizar el campo updated_at automáticamente
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$ LANGUAGE plpgsql;
+
+-- Aplicar el trigger a las tablas relevantes
+DROP TRIGGER IF EXISTS update_notification_templates_modtime ON notification_templates;
+CREATE TRIGGER update_notification_templates_modtime
+BEFORE UPDATE ON notification_templates
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+DROP TRIGGER IF EXISTS update_notification_preferences_modtime ON notification_preferences;
+CREATE TRIGGER update_notification_preferences_modtime
+BEFORE UPDATE ON notification_preferences
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+DROP TRIGGER IF EXISTS update_notification_queue_modtime ON notification_queue;
+CREATE TRIGGER update_notification_queue_modtime
+BEFORE UPDATE ON notification_queue
+FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Comentarios sobre la migración
+COMMENT ON TABLE notification_templates IS 'Almacena plantillas de notificación para distintos tipos de mensajes';
+COMMENT ON TABLE notification_preferences IS 'Almacena preferencias de notificación por usuario y tipo';
+COMMENT ON TABLE notification_queue IS 'Cola de procesamiento para envío asíncrono de notificaciones';
+COMMENT ON TABLE notification_delivery_logs IS 'Registro de entregas de notificaciones para auditoría y estadísticas';
+COMMENT ON FUNCTION clean_old_notifications() IS 'Función de mantenimiento para eliminar notificaciones antiguas';
+COMMENT ON VIEW notification_delivery_stats IS 'Vista para estadísticas de entrega de notificaciones';

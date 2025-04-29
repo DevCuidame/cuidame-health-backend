@@ -17,11 +17,12 @@ import availabilityRoutes from '../modules/appointment/routes/availability.route
 import appointmentRoutes from '../modules/appointment/routes/appointment.routes';
 import appointmentRequestRoutes from '../modules/appointment/routes/appointment-request.routes';
 import timeBlockRoutes from '../modules/appointment/routes/time-block.routes';
-import notificationRoutes from '../modules/notification/notification.routes';
 import adminAppointmentRoutes from '../modules/appointment/routes/admin-appointment.routes';
 import professionalStatsRoutes from '../modules/appointment/routes/professional-stats.routes';
 import exportRoutes from '../modules/appointment/routes/export.routes';
 import patientAppointmentRoutes from '../modules/appointment/patient/patient-appointment.routes';
+
+import { notificationRoutes, adminNotificationRoutes } from '../modules/notification/notification.routes';
 
 const router = Router();
 
@@ -50,5 +51,9 @@ router.use('/admin/professionals', professionalStatsRoutes);
 router.use('/admin/export', exportRoutes);
 
 router.use('/patient/appointments', patientAppointmentRoutes);
+
+// Rutas de notificación actualizadas
+router.use('/api/notifications', notificationRoutes);
+router.use('/admin/notifications', adminNotificationRoutes);
 
 export default router;
