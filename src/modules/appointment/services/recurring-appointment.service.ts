@@ -7,7 +7,7 @@ import { NotFoundError, BadRequestError } from '../../../utils/error-handler';
 import { HealthProfessionalService } from './health-professional.service';
 import { AppointmentTypeService } from './appointment-type.service';
 import { addDays, addWeeks, addMonths, setDate, getDay, format } from 'date-fns';
-import { PatientService } from '@modules/patient/patient.service';
+import { PatientService } from '../../../modules/patient/patient.service';
 import { MoreThan, Not } from 'typeorm';
 
 export class RecurringAppointmentService {
