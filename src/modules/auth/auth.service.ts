@@ -180,7 +180,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       city_id: user.city_id,
       pubname: user.pubname,
       privname: user.privname,
-      imagebs64: user.imagebs64,
+      // imagebs64: user.imagebs64,
       path: user.path,
     },
     access_token: token,

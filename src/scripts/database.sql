@@ -371,3 +371,107 @@ FOR EACH ROW EXECUTE FUNCTION log_control_medicines_changes();
 ---
 
 --Agregar campos a user, pacientes y modificar not null
+
+
+-- Tabla de profesionales de salud
+CREATE TABLE IF NOT EXISTS health_professionals (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    specialty VARCHAR(100) NOT NULL,
+    license_number VARCHAR(50) NOT NULL,
+    bio TEXT,
+    consultation_fee NUMERIC(10, 2),
+    is_active BOOLEAN DEFAULT TRUE,
+    default_appointment_duration INTEGER DEFAULT 30,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de tipos de cita
+CREATE TABLE IF NOT EXISTS appointment_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    default_duration INTEGER DEFAULT 30,
+    is_active BOOLEAN DEFAULT TRUE,
+    color_code VARCHAR(20),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Tabla de citas
+CREATE TABLE IF NOT EXISTS appointments (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL,
+    professional_id INTEGER NOT NULL,
+    appointment_type_id INTEGER NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'requested',
+    notes TEXT,
+    cancellation_reason TEXT,
+    reminder_sent BOOLEAN DEFAULT FALSE,
+    modified_by_id INTEGER,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (patient_id) REFERENCES pacientes(id) ON DELETE CASCADE,
+    FOREIGN KEY (professional_id) REFERENCES health_professionals(id) ON DELETE CASCADE,
+    FOREIGN KEY (appointment_type_id) REFERENCES appointment_types(id) ON DELETE CASCADE
+);
+
+-- Tabla de disponibilidad
+CREATE TABLE IF NOT EXISTS availabilities (
+    id SERIAL PRIMARY KEY,
+    professional_id INTEGER NOT NULL,
+    day_of_week VARCHAR(10) NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (professional_id) REFERENCES health_professionals(id) ON DELETE CASCADE
+);
+
+-- Tabla de bloqueos de tiempo
+CREATE TABLE IF NOT EXISTS time_blocks (
+    id SERIAL PRIMARY KEY,
+    professional_id INTEGER NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurrence_pattern TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (professional_id) REFERENCES health_professionals(id) ON DELETE CASCADE
+);
+
+-- Tabla de notificaciones
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    appointment_id INTEGER,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    scheduled_for TIMESTAMP,
+    sent_at TIMESTAMP,
+    read_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE SET NULL
+);
+
+-- Índices para mejorar rendimiento
+CREATE INDEX idx_appointments_patient ON appointments(patient_id);
+CREATE INDEX idx_appointments_professional ON appointments(professional_id);
+CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX idx_appointments_dates ON appointments(start_time, end_time);
+CREATE INDEX idx_availabilities_professional ON availabilities(professional_id);
+CREATE INDEX idx_time_blocks_professional ON time_blocks(professional_id);
+CREATE INDEX idx_time_blocks_dates ON time_blocks(start_time, end_time);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_notifications_status ON notifications(status);

@@ -10,35 +10,19 @@ import codeRoutes from '../modules/code/code.routes';
 import vitalsRoutes from '../modules/vitals/vitals.routes';
 import contactRoutes from '../modules/contact/contact.routes';
 
-import express from 'express';
+
+import healthProfessionalRoutes from '../modules/appointment/routes/health-professional.routes';
+import appointmentTypeRoutes from '../modules/appointment/routes/appointment-type.routes';
+import availabilityRoutes from '../modules/appointment/routes/availability.routes';
+import appointmentRoutes from '../modules/appointment/routes/appointment.routes';
+import appointmentRequestRoutes from '../modules/appointment/routes/appointment-request.routes';
+import timeBlockRoutes from '../modules/appointment/routes/time-block.routes';
+import notificationRoutes from '../modules/notification/notification.routes';
+
+
 
 
 const router = Router();
-
-// Test router for CORS testing purposes only - remove in production 
-// const testRouter = express.Router();
-
-// testRouter.get('/cors-test', (req, res) => {
-//   res.json({
-//     success: true,
-//     message: 'CORS is working correctly!',
-//     headers: {
-//       'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-//       'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
-//       'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
-//     },
-//     origin: req.headers.origin,
-//     date: new Date().toISOString()
-//   });
-// });
-
-// testRouter.options('/cors-test', (req, res) => {
-//   res.status(204).end();
-// });
-
-// router.use('/test', testRouter);
-
-// ..............................................................................................
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -50,5 +34,14 @@ router.use('/medical-info/condition', conditionRoutes);
 router.use('/code', codeRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/', vitalsRoutes);
+
+router.use('/professionals', healthProfessionalRoutes);
+router.use('/appointment-types', appointmentTypeRoutes);
+router.use('/availability', availabilityRoutes);
+router.use('/appointments', appointmentRoutes);
+
+router.use('/api/appointment-requests', appointmentRequestRoutes);
+router.use('/api/time-blocks', timeBlockRoutes);
+router.use('/api/notifications', notificationRoutes);
 
 export default router;
