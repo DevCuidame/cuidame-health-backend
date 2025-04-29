@@ -475,3 +475,51 @@ CREATE INDEX idx_time_blocks_professional ON time_blocks(professional_id);
 CREATE INDEX idx_time_blocks_dates ON time_blocks(start_time, end_time);
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_notifications_status ON notifications(status);
+
+
+
+-- Create table for appointment history
+CREATE TABLE IF NOT EXISTS appointment_history (
+  id SERIAL PRIMARY KEY,
+  appointment_id INTEGER NOT NULL,
+  change_type VARCHAR(20) NOT NULL, -- 'create', 'update', 'cancel', 'reschedule', 'status_change'
+  previous_status VARCHAR(50),
+  new_status VARCHAR(50),
+  previous_start_time TIMESTAMP,
+  new_start_time TIMESTAMP,
+  previous_end_time TIMESTAMP,
+  new_end_time TIMESTAMP,
+  reason TEXT,
+  user_id INTEGER,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  CONSTRAINT fk_appointment_history_appointment
+    FOREIGN KEY (appointment_id)
+    REFERENCES appointments(id)
+    ON DELETE CASCADE,
+    
+  CONSTRAINT fk_appointment_history_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON DELETE SET NULL
+);
+
+-- Create index for faster queries
+CREATE INDEX idx_appointment_history_appointment_id ON appointment_history(appointment_id);
+CREATE INDEX idx_appointment_history_user_id ON appointment_history(user_id);
+CREATE INDEX idx_appointment_history_change_type ON appointment_history(change_type);
+CREATE INDEX idx_appointment_history_created_at ON appointment_history(created_at);
+
+-- Add column for related appointments (like previous appointment in a reschedule)
+ALTER TABLE appointment_history ADD COLUMN IF NOT EXISTS related_appointment_id INTEGER;
+ALTER TABLE appointment_history 
+  ADD CONSTRAINT fk_appointment_history_related_appointment
+  FOREIGN KEY (related_appointment_id)
+  REFERENCES appointments(id)
+  ON DELETE SET NULL;
+
+-- Create index for the related appointment
+CREATE INDEX idx_appointment_history_related_appointment_id ON appointment_history(related_appointment_id);
+
+-- Add a comment to describe the table
+COMMENT ON TABLE appointment_history IS 'Tracks all changes to appointments, including creations, cancellations, and rescheduling';
