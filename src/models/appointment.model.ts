@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Patient } from './patient.model';
 import { HealthProfessional } from './health-professional.model';
 import { AppointmentType } from './appointment-type.model';
+import { RecurringAppointment } from './recurring-appointment.model';
 
 export enum AppointmentStatus {
   REQUESTED = 'requested',
@@ -52,6 +53,9 @@ export class Appointment {
   @Column({ nullable: true })
   modified_by_id?: number; // ID del usuario que modificó la cita por última vez
 
+  @Column({ nullable: true })
+  recurring_appointment_id?: number; // ID de la cita recurrente a la que pertenece
+
   @CreateDateColumn()
   created_at!: Date;
 
@@ -70,4 +74,8 @@ export class Appointment {
   @ManyToOne(() => AppointmentType)
   @JoinColumn({ name: 'appointment_type_id' })
   appointmentType!: AppointmentType;
+
+  @ManyToOne(() => RecurringAppointment)
+  @JoinColumn({ name: 'recurring_appointment_id' })
+  recurring_appointment?: RecurringAppointment;
 }
