@@ -1,4 +1,5 @@
 // src/modules/patient/patient.repository.ts
+import { FindOneOptions } from 'typeorm';
 import { BaseRepository } from '../../core/repositories/base.repository';
 import { Patient } from '../../models/patient.model';
 
@@ -7,9 +8,26 @@ export class PatientRepository extends BaseRepository<Patient> {
     super(Patient);
   }
 
+  /**
+   * Find one patient by options
+   * @param options TypeORM find options
+   * @returns Patient or null if not found
+   */
+  async findOneByOptions(
+    options: FindOneOptions<Patient>
+  ): Promise<Patient | null> {
+    return await this.repository.findOne(options);
+  }
+
   private formatPatientImageUrl(patient: Patient): Patient {
-    if (patient.photourl && patient.photourl.startsWith('/home/developer/uploads/')) {
-      patient.photourl = patient.photourl.replace('/home/developer/uploads/', '/uploads/');
+    if (
+      patient.photourl &&
+      patient.photourl.startsWith('/home/developer/uploads/')
+    ) {
+      patient.photourl = patient.photourl.replace(
+        '/home/developer/uploads/',
+        '/uploads/'
+      );
     }
     return patient;
   }
@@ -21,14 +39,15 @@ export class PatientRepository extends BaseRepository<Patient> {
    * @returns true si el paciente ya existe, false en caso contrario
    */
   async existsByNumeroid(numeroid: string, id?: number): Promise<boolean> {
-    const query = this.repository.createQueryBuilder('patient')
+    const query = this.repository
+      .createQueryBuilder('patient')
       .where('patient.numeroid = :numeroid', { numeroid });
-    
+
     // Si se proporciona un ID, excluir ese paciente (para actualizaciones)
     if (id) {
       query.andWhere('patient.id != :id', { id });
     }
-    
+
     const count = await query.getCount();
     return count > 0;
   }
@@ -41,7 +60,7 @@ export class PatientRepository extends BaseRepository<Patient> {
   async findByNumeroid(numeroid: string): Promise<Patient | null> {
     return await this.repository.findOne({
       where: { numeroid },
-      relations: ['caregiver']
+      relations: ['caregiver'],
     });
   }
 
@@ -53,7 +72,7 @@ export class PatientRepository extends BaseRepository<Patient> {
   async findByCode(code: string): Promise<Patient | null> {
     return await this.repository.findOne({
       where: { code },
-      relations: ['caregiver']
+      relations: ['caregiver'],
     });
   }
 
@@ -65,14 +84,14 @@ export class PatientRepository extends BaseRepository<Patient> {
   async findByCaregiverId(caregiverId: number): Promise<Patient[]> {
     const patients = await this.repository.find({
       where: { a_cargo_id: caregiverId },
-      order: { 
+      order: {
         apellido: 'ASC',
-        nombre: 'ASC'
-      }
+        nombre: 'ASC',
+      },
     });
-    
+
     // Formatear las URLs de las imágenes
-    return patients.map(patient => this.formatPatientImageUrl(patient));
+    return patients.map((patient) => this.formatPatientImageUrl(patient));
   }
 
   /**
@@ -81,25 +100,32 @@ export class PatientRepository extends BaseRepository<Patient> {
    * @param caregiverId ID del cuidador (opcional)
    * @returns Lista de pacientes que coinciden con los criterios
    */
-  async findBySearchCriteria(search: string, caregiverId?: number): Promise<Patient[]> {
-    const query = this.repository.createQueryBuilder('patient')
+  async findBySearchCriteria(
+    search: string,
+    caregiverId?: number
+  ): Promise<Patient[]> {
+    const query = this.repository
+      .createQueryBuilder('patient')
       .leftJoinAndSelect('patient.caregiver', 'caregiver');
-    
+
     // Añadir condición de búsqueda para nombre, apellido o número de ID
     if (search) {
-      query.andWhere('(patient.nombre ILIKE :search OR patient.apellido ILIKE :search OR patient.numeroid ILIKE :search)', 
-        { search: `%${search}%` });
+      query.andWhere(
+        '(patient.nombre ILIKE :search OR patient.apellido ILIKE :search OR patient.numeroid ILIKE :search)',
+        { search: `%${search}%` }
+      );
     }
-    
+
     // Filtrar por cuidador si se especifica
     if (caregiverId) {
       query.andWhere('patient.a_cargo_id = :caregiverId', { caregiverId });
     }
-    
+
     // Ordenar resultados
-    query.orderBy('patient.apellido', 'ASC')
+    query
+      .orderBy('patient.apellido', 'ASC')
       .addOrderBy('patient.nombre', 'ASC');
-    
+
     return await query.getMany();
   }
 
@@ -124,10 +150,10 @@ export class PatientRepository extends BaseRepository<Patient> {
         'respiratoryRates',
         'vaccines',
         'medicines',
-        'medicines.files'
-      ]
+        'medicines.files',
+      ],
     });
-    
+
     return patient;
   }
 
@@ -138,17 +164,19 @@ export class PatientRepository extends BaseRepository<Patient> {
   async generateUniqueCode(): Promise<string> {
     const prefix = 'PAT';
     const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
+
     const candidateCode = `${prefix}-${timestamp}-${random}`;
-    
+
     // Verificar que el código no exista ya
     const existingPatient = await this.findByCode(candidateCode);
     if (existingPatient) {
       // Si existe, intentar de nuevo con un nuevo código
       return this.generateUniqueCode();
     }
-    
+
     return candidateCode;
   }
 
@@ -158,14 +186,17 @@ export class PatientRepository extends BaseRepository<Patient> {
    * @param caregiverId ID del cuidador
    * @returns True si el paciente pertenece al cuidador
    */
-  async belongsToCaregiver(patientId: number, caregiverId: number): Promise<boolean> {
+  async belongsToCaregiver(
+    patientId: number,
+    caregiverId: number
+  ): Promise<boolean> {
     const patient = await this.repository.findOne({
-      where: { 
+      where: {
         id: patientId,
-        a_cargo_id: caregiverId
-      }
+        a_cargo_id: caregiverId,
+      },
     });
-    
+
     return !!patient;
   }
 }

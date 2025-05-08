@@ -373,6 +373,87 @@ FOR EACH ROW EXECUTE FUNCTION log_control_medicines_changes();
 --Agregar campos a user, pacientes y modificar not null
 
 
+-- Create chat_sessions table
+CREATE TABLE chat_sessions (
+    id SERIAL PRIMARY KEY,
+    session_id VARCHAR(255) UNIQUE NOT NULL,
+    patient_id INTEGER,
+    document_number VARCHAR(20),
+    current_step VARCHAR(50) NOT NULL DEFAULT 'validateDocument',
+    chat_data JSONB,
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    appointment_id INTEGER,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_interaction_at TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES pacientes(id)
+);
+
+-- Create an index on session_id for faster lookups
+CREATE INDEX idx_chat_sessions_session_id ON chat_sessions(session_id);
+
+-- Create an index on patient_id for faster lookups
+CREATE INDEX idx_chat_sessions_patient_id ON chat_sessions(patient_id);
+
+-- Create chat_messages table
+CREATE TABLE chat_messages (
+    id SERIAL PRIMARY KEY,
+    session_id VARCHAR(255) NOT NULL,
+    direction VARCHAR(10) NOT NULL CHECK (direction IN ('incoming', 'outgoing')),
+    message_content TEXT NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES chat_sessions(session_id) ON DELETE CASCADE
+);
+
+-- Create an index on session_id for faster lookups
+CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
+
+-- Create an index on created_at for faster sorting
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
+
+-- Create enum types for ChatStepType
+CREATE TYPE chat_step_type AS ENUM (
+    'validateDocument',
+    'selectCity',
+    'selectSpecialty',
+    'selectProfessional',
+    'selectDate',
+    'selectTime',
+    'confirmAppointment',
+    'completed'
+);
+
+-- Create enum types for ChatSessionStatus
+CREATE TYPE chat_session_status AS ENUM (
+    'active',
+    'completed',
+    'abandoned'
+);
+
+-- Alter chat_sessions table to use the enum types
+-- Step 1: Drop the default values for both columns
+ALTER TABLE chat_sessions 
+    ALTER COLUMN current_step DROP DEFAULT,
+    ALTER COLUMN status DROP DEFAULT;
+
+-- Step 2: Change the column types
+ALTER TABLE chat_sessions 
+    ALTER COLUMN current_step TYPE chat_step_type USING current_step::chat_step_type,
+    ALTER COLUMN status TYPE chat_session_status USING status::chat_session_status;
+
+-- Step 3: Set the default values again using the enum types
+ALTER TABLE chat_sessions 
+    ALTER COLUMN current_step SET DEFAULT 'validateDocument'::chat_step_type,
+    ALTER COLUMN status SET DEFAULT 'active'::chat_session_status;
+
+
+-- Alter chat_messages table to use enum type
+CREATE TYPE message_direction AS ENUM ('incoming', 'outgoing');
+
+ALTER TABLE chat_messages
+    ALTER COLUMN direction TYPE message_direction USING direction::message_direction;
+
 -- Tabla de profesionales de salud
 CREATE TABLE IF NOT EXISTS health_professionals (
     id SERIAL PRIMARY KEY,
@@ -532,6 +613,21 @@ COMMENT ON TABLE appointment_history IS 'Tracks all changes to appointments, inc
 
 -- Actualizar tipos de notificaciones
 -- (Esta modificación requiere una comprobación previa, ya que el enumerado ya existe)
+
+-- First, create the NotificationType enum
+CREATE TYPE NotificationType AS ENUM (
+    'appointment_confirmed',
+    'appointment_reminder',
+    'appointment_cancelled',
+    'appointment_rescheduled',
+    'appointment_summary',
+    'system_alert',
+    'payment_confirmation',
+    'payment_due',
+    'system_maintenance',
+    'survey_invitation'
+);
+
 DO $$
 BEGIN
     -- Verificar si se necesita actualizar el tipo enum
@@ -685,7 +781,7 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS template_id INTEGER REFERENCE
 
 -- Crear una función para limpiar automáticamente notificaciones y logs antiguos
 CREATE OR REPLACE FUNCTION clean_old_notifications()
-RETURNS integer AS $
+RETURNS integer AS $$
 DECLARE
     deleted_count integer;
 BEGIN
@@ -703,7 +799,7 @@ BEGIN
     
     RETURN deleted_count;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Agregar índices para mejorar rendimiento
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id_status ON notifications(user_id, status);
@@ -735,12 +831,12 @@ GROUP BY
 
 -- Agregar trigger para actualizar el campo updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Aplicar el trigger a las tablas relevantes
 DROP TRIGGER IF EXISTS update_notification_templates_modtime ON notification_templates;

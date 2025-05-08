@@ -21,10 +21,16 @@ import adminAppointmentRoutes from '../modules/appointment/routes/admin-appointm
 import professionalStatsRoutes from '../modules/appointment/routes/professional-stats.routes';
 import exportRoutes from '../modules/appointment/routes/export.routes';
 import patientAppointmentRoutes from '../modules/appointment/patient/patient-appointment.routes';
+import chatRoutes from '../modules/chat/chat.routes';
+
+import recurringAppointmentRoutes from '../modules/appointment/routes/recurring-appointment.routes';
+import questionnaireRoutes from '../modules/appointment/routes/questionnaire.routes';
 
 import { notificationRoutes, adminNotificationRoutes } from '../modules/notification/notification.routes';
 
 const router = Router();
+
+//Index
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -52,8 +58,13 @@ router.use('/admin/export', exportRoutes);
 
 router.use('/patient/appointments', patientAppointmentRoutes);
 
+router.use('/recurring-appointments', recurringAppointmentRoutes);
+router.use('/questionnaires', questionnaireRoutes);
+
 // Rutas de notificación actualizadas
 router.use('/api/notifications', notificationRoutes);
 router.use('/admin/notifications', adminNotificationRoutes);
+
+router.use('/chat', chatRoutes);
 
 export default router;
