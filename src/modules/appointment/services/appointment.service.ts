@@ -92,20 +92,20 @@ export class AppointmentService {
     userId?: number
   ): Promise<Appointment> {
     // Verificaciones de datos
-    await this.validateAppointmentData(data);
+    // await this.validateAppointmentData(data);
 
     // Verificar que no haya conflictos de horario
-    if (
-      await this.appointmentRepository.hasConflictingAppointments(
-        data.professional_id as number,
-        data.start_time as Date,
-        data.end_time as Date
-      )
-    ) {
-      throw new BadRequestError(
-        'El profesional ya tiene una cita programada en este horario'
-      );
-    }
+    // if (
+    //   await this.appointmentRepository.hasConflictingAppointments(
+    //     data.professional_id as number,
+    //     data.start_time as Date,
+    //     data.end_time as Date
+    //   )
+    // ) {
+    //   throw new BadRequestError(
+    //     'El profesional ya tiene una cita programada en este horario'
+    //   );
+    // }
 
     // Si el estado no se especifica, establecer como "Solicitada"
     if (!data.status) {
@@ -135,7 +135,7 @@ export class AppointmentService {
     if (
       (data.start_time || data.end_time || data.professional_id) &&
       (await this.appointmentRepository.hasConflictingAppointments(
-        (data.professional_id as number) || appointment.professional_id,
+        (data.professional_id as number) || appointment.professional_id!,
         (data.start_time as Date) || appointment.start_time,
         (data.end_time as Date) || appointment.end_time,
         id

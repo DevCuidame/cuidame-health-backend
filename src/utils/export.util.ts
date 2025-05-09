@@ -40,8 +40,8 @@ export class ExportUtils {
     // Agregar filas de datos
     appointments.forEach(appointment => {
       // Formatear fecha y hora
-      const date = appointment.start_time.toISOString().split('T')[0];
-      const startTime = appointment.start_time.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      const date = appointment.start_time!.toISOString().split('T')[0];
+      const startTime = appointment.start_time!.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
       const endTime = appointment.end_time?.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) || '';
       
       // Obtener nombres de paciente y profesional
@@ -97,7 +97,7 @@ export class ExportUtils {
     
     // Mapear citas a un formato más amigable
     const mappedAppointments = appointments.map(appointment => {
-      const startDate = appointment.start_time.toISOString();
+      const startDate = appointment.start_time!.toISOString();
       const endDate = appointment.end_time?.toISOString() || '';
       
       return {
@@ -145,7 +145,7 @@ export class ExportUtils {
     });
     
     // Obtener fechas mínima y máxima
-    const dates = appointments.map(a => a.start_time.getTime());
+    const dates = appointments.map(a => a.start_time!.getTime());
     const minDate = new Date(Math.min(...dates)).toLocaleDateString();
     const maxDate = new Date(Math.max(...dates)).toLocaleDateString();
     

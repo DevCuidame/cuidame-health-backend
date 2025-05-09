@@ -82,8 +82,8 @@ export class ReminderService {
             ? `${appointment.professional.user.name} ${appointment.professional.user.lastname}`
             : 'profesional asignado';
           
-          const appointmentDate = appointment.start_time.toLocaleDateString();
-          const appointmentTime = appointment.start_time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          const appointmentDate = appointment.start_time!.toLocaleDateString();
+          const appointmentTime = appointment.start_time!.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
           const appointmentType = appointment.appointmentType?.name || 'consulta';
           
           // Preparar mensaje de recordatorio
@@ -105,7 +105,7 @@ export class ReminderService {
           
           // Enviar recordatorio al profesional
           await this.notificationService.createNotification({
-            user_id: appointment.professional_id,
+            user_id: appointment.professional_id!,
             appointment_id: appointment.id,
             type: NotificationType.APPOINTMENT_REMINDER,
             title: 'Recordatorio de cita con paciente',
@@ -179,8 +179,8 @@ export class ReminderService {
           let message = `Resumen de citas para la próxima semana (${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}):\n\n`;
           
           appointments.forEach((appointment, index) => {
-            const date = appointment.start_time.toLocaleDateString();
-            const time = appointment.start_time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const date = appointment.start_time!.toLocaleDateString();
+            const time = appointment.start_time!.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const patientName = `${appointment.patient.nombre} ${appointment.patient.apellido}`;
             const appointmentType = appointment.appointmentType?.name || 'consulta';
             
@@ -250,7 +250,7 @@ export class ReminderService {
           
           // Notificación para el profesional
           await this.notificationService.createNotification({
-            user_id: appointment.professional_id,
+            user_id: appointment.professional_id!,
             appointment_id: appointment.id,
             type: NotificationType.APPOINTMENT_REMINDER,
             title: 'Recordatorio: Cita pendiente de confirmar',

@@ -5,6 +5,7 @@
   import { ApiResponse } from '../../core/interfaces/response.interface';
   import { BadRequestError } from '../../utils/error-handler';
 import { ChatBotService } from './chat-bot.service';
+import { ChatMessageRepository } from './chat-message.repository';
   
   export class ChatController {
     private chatBotService: ChatBotService;
@@ -56,8 +57,8 @@ import { ChatBotService } from './chat-bot.service';
         
         const session = await this.chatBotService.getOrCreateSession(sessionId);
         
-        // Get messages for this session
-        const chatMessageRepository = req.app.get('chatMessageRepository');
+        // Create the repository instance
+        const chatMessageRepository = new ChatMessageRepository();
         const messages = await chatMessageRepository.findBySessionId(session.session_id);
         
         const formattedMessages = messages.map((message: any) => ({
@@ -82,6 +83,7 @@ import { ChatBotService } from './chat-bot.service';
         next(error);
       }
     };
+  
   
     /**
      * Send message to chat

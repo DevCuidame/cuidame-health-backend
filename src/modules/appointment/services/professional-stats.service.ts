@@ -116,7 +116,7 @@ export class ProfessionalStatsService {
       }
 
       // Contar por franja horaria
-      const hour = appointment.start_time.getHours();
+      const hour = appointment.start_time!.getHours();
       if (hour >= 6 && hour < 12) {
         stats.timeSlots.morning++;
       } else if (hour >= 12 && hour < 18) {
@@ -126,7 +126,7 @@ export class ProfessionalStatsService {
       }
 
       // Contar por día
-      const dateKey = appointment.start_time.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateKey = appointment.start_time!.toISOString().split('T')[0]; // YYYY-MM-DD
       appointmentsByDay[dateKey] = (appointmentsByDay[dateKey] || 0) + 1;
 
       // Contar por paciente
@@ -135,8 +135,8 @@ export class ProfessionalStatsService {
 
       // Contar por tipo de cita
       const appointmentTypeId = appointment.appointment_type_id;
-      stats.metrics.appointmentTypeDistribution[appointmentTypeId] = 
-        (stats.metrics.appointmentTypeDistribution[appointmentTypeId] || 0) + 1;
+      stats.metrics.appointmentTypeDistribution[appointmentTypeId!] = 
+        (stats.metrics.appointmentTypeDistribution[appointmentTypeId!] || 0) + 1;
     });
 
     // Calcular métricas
@@ -285,10 +285,10 @@ export class ProfessionalStatsService {
     // Agrupar citas por profesional
     const appointmentsByProfessional: Record<number, any[]> = {};
     appointments.forEach(appointment => {
-      if (!appointmentsByProfessional[appointment.professional_id]) {
-        appointmentsByProfessional[appointment.professional_id] = [];
+      if (!appointmentsByProfessional[appointment.professional_id!]) {
+        appointmentsByProfessional[appointment.professional_id!] = [];
       }
-      appointmentsByProfessional[appointment.professional_id].push(appointment);
+      appointmentsByProfessional[appointment.professional_id!].push(appointment);
     });
 
     // Calcular estadísticas por profesional

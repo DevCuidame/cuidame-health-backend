@@ -24,6 +24,8 @@ import { HealthRepository } from '../../modules/health/health.repository';
 import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
 import { FileUploadService } from '../../utils/file-upload.util';
 import { AppDataSource } from '../../core/config/database';
+import { RoleRepository } from '../role/role.repository';
+import { UserRole } from '../../models/user-role.model';
 
 
 export class AuthService {
@@ -31,12 +33,14 @@ export class AuthService {
   private patientRepository: PatientRepository;
   private healthRepository: HealthRepository;
   private medicalInfoRepository: MedicalInfoRepository;
+  private roleRepository: RoleRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
     this.patientRepository = new PatientRepository(); 
     this.healthRepository = new HealthRepository();
     this.medicalInfoRepository = new MedicalInfoRepository();
+    this.roleRepository = new RoleRepository();
   }
 
   /**
@@ -90,7 +94,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   }
 
   // Generar token JWT
-  const token = this.generateToken(user);
+  const token = await this.generateToken(user);
   
   // Generar refresh token
   const refreshToken = this.generateRefreshToken(user);
@@ -223,7 +227,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       }
       
       // Generar nuevo token de acceso
-      const newAccessToken = this.generateToken(user);
+      const newAccessToken = await this.generateToken(user);
       
       // Generar nuevo refresh token (opcional, para implementar rotación de tokens)
       const newRefreshToken = this.generateRefreshToken(user);
@@ -303,6 +307,28 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       created_at: new Date(),
       updated_at: new Date(),
     });
+    
+    // Asignar rol por defecto al usuario
+    try {
+      // Obtener el rol por defecto (normalmente 'usuario')
+      const defaultRole = await this.roleRepository.getDefaultRole();
+      
+      if (defaultRole) {
+        // Crear la relación usuario-rol
+        const userRoleRepository = AppDataSource.getRepository(UserRole);
+        const userRole = userRoleRepository.create({
+          user_id: newUser.id,
+          role_id: defaultRole.id
+        });
+        
+        await userRoleRepository.save(userRole);
+      } else {
+        logger.warn(`No se pudo asignar rol por defecto al usuario ${newUser.id} porque no existe el rol 'usuario'`);
+      }
+    } catch (error) {
+      logger.error(`Error al asignar rol al usuario ${newUser.id}:`, error);
+      // No fallamos el proceso completo si hay error en la asignación de rol
+    }
   
     // Si hay imagen, guardarla y actualizar la URL de la foto
     let photoUrl = '';
@@ -482,11 +508,19 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
    * @param user Usuario
    * @returns Token JWT
    */
-  private generateToken(user: User): string {
+  private async generateToken(user: User): Promise<string> {
+    // Obtener el rol del usuario
+    const userRoleRepository = AppDataSource.getRepository(UserRole);
+    const userRole = await userRoleRepository.findOne({
+      where: { user_id: user.id },
+      relations: ['role']
+    });
+
     const payload: JwtPayload = {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: userRole?.role?.name || 'usuario'
     };
 
     // @ts-ignore - Forzar a TypeScript a ignorar este error específico

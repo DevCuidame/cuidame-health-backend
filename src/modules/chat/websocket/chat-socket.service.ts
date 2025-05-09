@@ -16,7 +16,7 @@ import { ChatSessionRepository } from '../chat-session.repository';
     private clients: Map<string, WebSocket>;
   
     constructor(server: http.Server) {
-      this.wss = new WebSocket.Server({ server });
+      this.wss = new WebSocket.Server({ server, path: '/ws/chat' });
       this.chatBotService = new ChatBotService();
       this.chatSessionRepository = new ChatSessionRepository();
       this.chatMessageRepository = new ChatMessageRepository();
@@ -92,10 +92,11 @@ import { ChatSessionRepository } from '../chat-session.repository';
         ws.send(JSON.stringify({
           type: 'init',
           sessionId: session.session_id,
-          messages: messages.map((m : any) => ({
+          messages: messages.map((m: any) => ({
             content: m.message_content,
             sender: m.direction === 'outgoing' ? 'bot' : 'user',
-            timestamp: m.created_at
+            timestamp: m.created_at,
+            sessionId: m.session_id
           }))
         }));
       } else {
@@ -167,11 +168,3 @@ import { ChatSessionRepository } from '../chat-session.repository';
     }
   }
   
-  // Integration with Express app
-  // Add this to server.ts:
-  /*
-  import { ChatSocketService } from './modules/chat/websocket/chat-socket.service';
-  
-  // After server is created:
-  const chatSocketService = new ChatSocketService(server);
-  */

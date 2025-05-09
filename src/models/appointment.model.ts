@@ -23,10 +23,10 @@ export class Appointment {
   patient_id!: number;
 
   @Column()
-  professional_id!: number;
+  professional_id?: number;
 
   @Column()
-  appointment_type_id!: number;
+  appointment_type_id?: number;
 
   @Column({ type: 'timestamp' })
   start_time!: Date;
@@ -48,7 +48,7 @@ export class Appointment {
   cancellation_reason?: string;
 
   @Column({ default: false })
-  reminder_sent!: boolean;
+  reminder_sent?: boolean;
 
   @Column({ nullable: true })
   modified_by_id?: number; // ID del usuario que modificó la cita por última vez
@@ -57,10 +57,10 @@ export class Appointment {
   recurring_appointment_id?: number; // ID de la cita recurrente a la que pertenece
 
   @CreateDateColumn()
-  created_at!: Date;
+  created_at?: Date;
 
   @UpdateDateColumn()
-  updated_at!: Date;
+  updated_at?: Date;
 
   // Relaciones
   @ManyToOne(() => Patient)
@@ -69,11 +69,11 @@ export class Appointment {
 
   @ManyToOne(() => HealthProfessional)
   @JoinColumn({ name: 'professional_id' })
-  professional!: HealthProfessional;
+  professional?: HealthProfessional;
 
   @ManyToOne(() => AppointmentType)
   @JoinColumn({ name: 'appointment_type_id' })
-  appointmentType!: AppointmentType;
+  appointmentType?: AppointmentType;
 
   @ManyToOne(() => RecurringAppointment)
   @JoinColumn({ name: 'recurring_appointment_id' })

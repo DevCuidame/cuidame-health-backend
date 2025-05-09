@@ -119,21 +119,21 @@ export class AdminAppointmentService {
       metrics.byStatus[appointment.status]++;
       
       // Por tipo de cita
-      const typeId = appointment.appointment_type_id.toString();
+      const typeId = appointment.appointment_type_id!.toString();
       if (!metrics.byType[typeId]) {
         metrics.byType[typeId] = 0;
       }
       metrics.byType[typeId]++;
       
       // Por profesional
-      const professionalId = appointment.professional_id.toString();
+      const professionalId = appointment.professional_id!.toString();
       if (!metrics.byProfessional[professionalId]) {
         metrics.byProfessional[professionalId] = 0;
       }
       metrics.byProfessional[professionalId]++;
       
       // Distribución diaria
-      const dateKey = appointment.start_time.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateKey = appointment.start_time!.toISOString().split('T')[0]; // YYYY-MM-DD
       if (!metrics.dailyDistribution[dateKey]) {
         metrics.dailyDistribution[dateKey] = 0;
       }
@@ -199,8 +199,8 @@ export class AdminAppointmentService {
           : 'Cita rechazada';
         
         const message = action === 'confirm'
-          ? `Tu cita para el ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()} ha sido confirmada.`
-          : `Tu cita para el ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()} ha sido rechazada. ${reason ? `Motivo: ${reason}` : ''}`;
+          ? `Tu cita para el ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido confirmada.`
+          : `Tu cita para el ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido rechazada. ${reason ? `Motivo: ${reason}` : ''}`;
         
         await this.notificationService.createNotification({
           user_id: appointment.patient_id,
@@ -253,8 +253,8 @@ export class AdminAppointmentService {
     // Reutilizamos la lógica de verificación de conflictos
     const hasConflict = await this.appointmentRepository.hasConflictingAppointments(
       newProfessionalId,
-      appointment.start_time,
-      appointment.end_time
+      appointment.start_time!,
+      appointment.end_time!
     );
     
     if (hasConflict) {
@@ -280,7 +280,7 @@ export class AdminAppointmentService {
       appointment_id: appointment.id,
       type: NotificationType.APPOINTMENT_RESCHEDULED,
       title: 'Cita reasignada',
-      message: `Tu cita para el ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()} ha sido reasignada a un nuevo profesional.`
+      message: `Tu cita para el ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido reasignada a un nuevo profesional.`
     });
     
     return updatedAppointment;
@@ -314,44 +314,44 @@ export class AdminAppointmentService {
       const professionalId = appointment.professional_id;
       
       // Inicializar si no existe
-      if (!workloadByProfessional[professionalId]) {
+      if (!workloadByProfessional[professionalId!]) {
         const professionalName = appointment.professional?.user?.name 
           ? `${appointment.professional.user.name} ${appointment.professional.user.lastname}`
           : `Profesional ID ${professionalId}`;
           
-        workloadByProfessional[professionalId] = {
-          professionalId,
-          professionalName,
-          total: 0,
-          confirmed: 0,
-          completed: 0,
-          cancelled: 0,
-          noShow: 0,
-          requested: 0,
-          averageDuration: 0,
-          totalHours: 0
-        };
+        // workloadByProfessional[professionalId] = {
+        //   professionalId,
+        //   professionalName,
+        //   total: 0,
+        //   confirmed: 0,
+        //   completed: 0,
+        //   cancelled: 0,
+        //   noShow: 0,
+        //   requested: 0,
+        //   averageDuration: 0,
+        //   totalHours: 0
+        // };
       }
       
       // Incrementar contadores
-      workloadByProfessional[professionalId].total++;
+      workloadByProfessional[professionalId!].total++;
       
       // Contar por estado
       switch (appointment.status) {
         case AppointmentStatus.CONFIRMED:
-          workloadByProfessional[professionalId].confirmed++;
+          workloadByProfessional[professionalId!].confirmed++;
           break;
         case AppointmentStatus.COMPLETED:
-          workloadByProfessional[professionalId].completed++;
+          workloadByProfessional[professionalId!].completed++;
           break;
         case AppointmentStatus.CANCELLED:
-          workloadByProfessional[professionalId].cancelled++;
+          workloadByProfessional[professionalId!].cancelled++;
           break;
         case AppointmentStatus.NO_SHOW:
-          workloadByProfessional[professionalId].noShow++;
+          workloadByProfessional[professionalId!].noShow++;
           break;
         case AppointmentStatus.REQUESTED:
-          workloadByProfessional[professionalId].requested++;
+          workloadByProfessional[professionalId!].requested++;
           break;
       }
       
@@ -366,17 +366,17 @@ export class AdminAppointmentService {
           appointment.status === AppointmentStatus.CONFIRMED
         ) {
           // Actualizar duración promedio
-          const currentTotal = workloadByProfessional[professionalId].averageDuration * 
-                              (workloadByProfessional[professionalId].completed + 
-                               workloadByProfessional[professionalId].confirmed - 1);
+          const currentTotal = workloadByProfessional[professionalId!].averageDuration * 
+                              (workloadByProfessional[professionalId!].completed + 
+                               workloadByProfessional[professionalId!].confirmed - 1);
           
-          workloadByProfessional[professionalId].averageDuration = 
+          workloadByProfessional[professionalId!].averageDuration = 
             (currentTotal + durationMinutes) / 
-            (workloadByProfessional[professionalId].completed + 
-             workloadByProfessional[professionalId].confirmed);
+            (workloadByProfessional[professionalId!].completed + 
+             workloadByProfessional[professionalId!].confirmed);
           
           // Añadir al total de horas
-          workloadByProfessional[professionalId].totalHours += durationMinutes / 60;
+          workloadByProfessional[professionalId!].totalHours += durationMinutes / 60;
         }
       }
     });

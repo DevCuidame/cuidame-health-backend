@@ -219,7 +219,7 @@ export class QuestionnaireService {
     const appointment = await this.appointmentService.getAppointmentById(appointmentId);
 
     // Buscar cuestionarios asociados al tipo de cita
-    const questionnaires = await this.questionnaireRepository.findByAppointmentType(appointment.appointment_type_id);
+    const questionnaires = await this.questionnaireRepository.findByAppointmentType(appointment.appointment_type_id!);
 
     // Si no hay cuestionarios específicos para este tipo de cita, buscar cuestionarios generales
     if (!questionnaires || questionnaires.length === 0) {

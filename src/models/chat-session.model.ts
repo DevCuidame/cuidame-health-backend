@@ -20,9 +20,9 @@ import {
     VALIDATE_DOCUMENT = 'validateDocument',
     SELECT_CITY = 'selectCity',
     SELECT_SPECIALTY = 'selectSpecialty',
-    SELECT_PROFESSIONAL = 'selectProfessional',
-    SELECT_DATE = 'selectDate',
-    SELECT_TIME = 'selectTime',
+    // SELECT_PROFESSIONAL = 'selectProfessional',
+    // SELECT_DATE = 'selectDate',
+    // SELECT_TIME = 'selectTime',
     CONFIRM_APPOINTMENT = 'confirmAppointment',
     COMPLETED = 'completed'
   }

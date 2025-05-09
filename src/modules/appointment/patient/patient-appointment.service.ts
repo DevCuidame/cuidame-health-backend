@@ -166,7 +166,7 @@ export class PatientAppointmentService {
     
     // Verificar que la cancelación se haga con al menos 24 horas de anticipación
     const now = new Date();
-    const appointmentTime = new Date(appointment.start_time);
+    const appointmentTime = new Date(appointment.start_time!);
     const hoursDifference = (appointmentTime.getTime() - now.getTime()) / (1000 * 60 * 60);
     
     let lateCancellation = false;
@@ -213,11 +213,11 @@ export class PatientAppointmentService {
     
     // Enviar notificación al profesional
     await this.notificationService.createNotification({
-      user_id: appointment.professional_id,
+      user_id: appointment.professional_id!,
       appointment_id: appointment.id,
       type: NotificationType.APPOINTMENT_CANCELLED,
       title: 'Cita cancelada',
-      message: `La cita del ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
+      message: `La cita del ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
     });
     
     return updatedAppointment;
@@ -300,11 +300,11 @@ export class PatientAppointmentService {
     
     // Enviar notificación al profesional
     await this.notificationService.createNotification({
-      user_id: appointment.professional_id,
+      user_id: appointment.professional_id!,
       appointment_id: newAppointment.id,
       type: NotificationType.APPOINTMENT_RESCHEDULED,
       title: 'Solicitud de reprogramación de cita',
-      message: `El paciente ha solicitado reprogramar la cita del ${appointment.start_time.toLocaleDateString()} al ${newStartTime.toLocaleDateString()} a las ${newStartTime.toLocaleTimeString()}. Motivo: ${reason}`
+      message: `El paciente ha solicitado reprogramar la cita del ${appointment.start_time!.toLocaleDateString()} al ${newStartTime.toLocaleDateString()} a las ${newStartTime.toLocaleTimeString()}. Motivo: ${reason}`
     });
     
     // Obtener la cita actualizada con todas las relaciones
@@ -350,11 +350,11 @@ export class PatientAppointmentService {
     
     // Enviar notificación al profesional
     await this.notificationService.createNotification({
-      user_id: appointment.professional_id,
+      user_id: appointment.professional_id!,
       appointment_id: appointment.id,
       type: NotificationType.APPOINTMENT_CONFIRMED,
       title: 'Asistencia confirmada por el paciente',
-      message: `El paciente ha confirmado su asistencia a la cita del ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()}.`
+      message: `El paciente ha confirmado su asistencia a la cita del ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()}.`
     });
     
     return updatedAppointment;
