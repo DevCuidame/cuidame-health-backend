@@ -75,18 +75,18 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   }
 
   // Si la verificación fue exitosa, verificar si necesitamos actualizar el hash
-  if (PasswordService.needsUpgrade(user.password)) {
-    // Migrar la contraseña al nuevo formato de manera silenciosa
-    const newHash = PasswordService.hashPassword(password);
-    await this.userRepository.update(
-      user.id,
-      {
-        password: newHash,
-        updated_at: new Date(),
-      },
-      'Usuario'
-    );
-  }
+  // if (PasswordService.needsUpgrade(user.password)) {
+  //   // Migrar la contraseña al nuevo formato de manera silenciosa
+  //   const newHash = PasswordService.hashPassword(password);
+  //   await this.userRepository.update(
+  //     user.id,
+  //     {
+  //       password: newHash,
+  //       updated_at: new Date(),
+  //     },
+  //     'Usuario'
+  //   );
+  // }
 
   let message = 'Sesión iniciada exitosamente';
   if (!user.verificado) {
@@ -169,6 +169,14 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     cared_persons = enrichedPatients;
   }
 
+  // Obtener el rol del usuario para incluirlo en la respuesta
+  const userRoleRepository = AppDataSource.getRepository(UserRole);
+  const userRole = await userRoleRepository.findOne({
+    where: { user_id: user.id },
+    relations: ['role']
+  });
+  const roleName = userRole?.role?.name || 'User';
+
   // Crear objeto de respuesta (exclude imagebs64 from user data as well)
   const userData = {
     user: {
@@ -186,6 +194,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       privname: user.privname,
       // imagebs64: user.imagebs64,
       path: user.path,
+      role: roleName, // Incluir el rol del usuario en la respuesta
     },
     access_token: token,
     refresh_token: refreshToken,
@@ -235,12 +244,21 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       // Actualizar token de sesión en la base de datos (opcional)
       await this.userRepository.updateSessionToken(user.id, newAccessToken);
       
+      // Obtener el rol del usuario para incluirlo en la respuesta
+      const userRoleRepository = AppDataSource.getRepository(UserRole);
+      const userRole = await userRoleRepository.findOne({
+        where: { user_id: user.id },
+        relations: ['role']
+      });
+      const roleName = userRole?.role?.name || 'User';
+      
       return {
         success: true,
         message: 'Token renovado exitosamente',
         data: {
           access_token: newAccessToken,
-          refresh_token: newRefreshToken
+          refresh_token: newRefreshToken,
+          role: roleName // Incluir el rol del usuario en la respuesta
         },
         token: newAccessToken,
         refresh_token: newRefreshToken
@@ -293,7 +311,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     }
   
     // Generar hash de la contraseña
-    const hashedPassword = PasswordService.hashPassword(password);
+    const hashedPassword = PasswordService.hashPasswordMD5(password);
   
     const imageBase64 = userData.imagebs64;
     
@@ -432,7 +450,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       }
 
       // Generar hash de la nueva contraseña
-      const hashedPassword = PasswordService.hashPassword(newPassword);
+      const hashedPassword = PasswordService.hashPasswordMD5(newPassword);
 
       // Actualizar contraseña y limpiar token
       await this.userRepository.update(
@@ -520,7 +538,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: userRole?.role?.name || 'usuario'
+      role: userRole?.role?.name || 'User'
     };
 
     // @ts-ignore - Forzar a TypeScript a ignorar este error específico

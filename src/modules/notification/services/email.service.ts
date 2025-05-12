@@ -23,7 +23,7 @@ export class EmailService {
   private constructor() {
     this.defaultFromEmail = config.env === 'production' 
       ? config.email.from 
-      : 'dev@cuidame.local';
+      : 'contacto@esmart-tek.com';
     
     // Inicializar el transporter pero sin esperar
     this.initializeTransporter();
@@ -56,7 +56,7 @@ export class EmailService {
     
     // Crear una nueva promesa de inicialización
     this.initializationPromise = (async () => {
-      if (config.env === 'production') {
+      if (config.env === 'development') {
         // Configuración para producción usando SMTP real
         logger.debug('📧 Configurando transporter para producción');
         this.transporter = nodemailer.createTransport({

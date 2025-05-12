@@ -16,6 +16,15 @@ router.use(authMiddleware);
  */
 router.get('/upcoming', patientAppointmentController.getUpcomingAppointments);
 
+
+/**
+ * @route GET /api/patient/appointments/all
+ * @desc Obtener todas las citas del paciente
+ * @access Private
+ */
+router.get('/all', patientAppointmentController.getAllPatientsAppointments);
+
+
 /**
  * @route GET /api/patient/appointments/past
  * @desc Obtener citas pasadas del paciente

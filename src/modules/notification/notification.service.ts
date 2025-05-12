@@ -57,9 +57,9 @@ export class NotificationService {
       });
       
       // Si está programada para el futuro, no enviar ahora
-      if (data.scheduled_for && data.scheduled_for > new Date()) {
-        return notification;
-      }
+      // if (data.scheduled_for && data.scheduled_for > new Date()) {
+      //   return notification;
+      // }
       
       // Enviar la notificación a través de los canales correspondientes
       await this.sendNotificationThroughChannels(notification);
@@ -263,7 +263,7 @@ export class NotificationService {
       );
       
       // Enviar por email si está habilitado
-      if (preferences.email_enabled && user.email) {
+      if (preferences.email_enabled || user.email) {
         await this.queueService.enqueueNotification(
           notification.id,
           'email',
@@ -277,7 +277,7 @@ export class NotificationService {
       }
       
       // Enviar por push si está habilitado y hay ID de notificación
-      if (preferences.push_enabled && user.notificationid) {
+      if (preferences.push_enabled || user.notificationid) {
         await this.queueService.enqueueNotification(
           notification.id,
           'push',

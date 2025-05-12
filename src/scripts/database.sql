@@ -485,11 +485,12 @@ CREATE TABLE IF NOT EXISTS appointment_types (
 CREATE TABLE IF NOT EXISTS appointments (
     id SERIAL PRIMARY KEY,
     patient_id INTEGER NOT NULL,
-    professional_id INTEGER NOT NULL,
-    appointment_type_id INTEGER NOT NULL,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'requested',
+    professional_id INTEGER NULL,
+    appointment_type_id INTEGER NULL,
+    recurring_appointment_id INTEGER, 
+    start_time TIMESTAMP NULL,
+    end_time TIMESTAMP NULL,
+    status VARCHAR(20) DEFAULT 'requested',
     notes TEXT,
     cancellation_reason TEXT,
     reminder_sent BOOLEAN DEFAULT FALSE,
@@ -861,3 +862,7 @@ COMMENT ON TABLE notification_queue IS 'Cola de procesamiento para envío asínc
 COMMENT ON TABLE notification_delivery_logs IS 'Registro de entregas de notificaciones para auditoría y estadísticas';
 COMMENT ON FUNCTION clean_old_notifications() IS 'Función de mantenimiento para eliminar notificaciones antiguas';
 COMMENT ON VIEW notification_delivery_stats IS 'Vista para estadísticas de entrega de notificaciones';
+
+
+-- Actualizar el tipo enum en PostgreSQL
+ALTER TYPE chat_step_type ADD VALUE 'selectAppointmentType' AFTER 'selectSpecialty';

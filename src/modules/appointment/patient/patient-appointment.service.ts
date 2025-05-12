@@ -4,9 +4,11 @@ import { Appointment, AppointmentStatus } from '../../../models/appointment.mode
 import { NotificationService } from '../../notification/notification.service';
 import { NotificationType } from '../../../models/notification.model';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../../utils/error-handler';
-import { Between, FindOptionsWhere, In, LessThan, MoreThan } from 'typeorm';
+import { Between, FindOptionsWhere, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { PaginatedResult, PaginationParams } from '../../../core/interfaces/response.interface';
 import { AppointmentService } from '../services/appointment.service';
+import { Patient } from '../../../models/patient.model';
+import { PatientRepository } from '../../../modules/patient/patient.repository';
 
 /**
  * Tipos de motivos para cancelación
@@ -37,11 +39,14 @@ export class PatientAppointmentService {
   private appointmentRepository: AppointmentRepository;
   private appointmentService: AppointmentService;
   private notificationService: NotificationService;
+  private patientRepository: PatientRepository;
 
   constructor() {
     this.appointmentRepository = new AppointmentRepository();
     this.appointmentService = new AppointmentService();
     this.notificationService = new NotificationService();
+    this.patientRepository = new PatientRepository();
+  
   }
 
   /**
@@ -60,6 +65,60 @@ export class PatientAppointmentService {
       },
       relations: ['professional', 'professional.user', 'appointmentType'],
       order: { start_time: 'ASC' }
+    });
+  }
+
+  
+   /**
+   * Verifica si un paciente está a cargo de un usuario específico
+   */
+   async isPatientUnderUserCare(userId: number, patientId: number): Promise<boolean> {
+    const patient = await this.patientRepository.findOneByOptions({
+      where: {
+        id: patientId,
+        a_cargo_id: userId
+      }
+    });
+    
+    return !!patient; // Devuelve true si el paciente está a cargo del usuario, false en caso contrario
+  }
+
+  /**
+   * Obtiene todos los pacientes a cargo de un usuario específico
+   */
+  async getPatientsUnderUserCare(userId: number): Promise<Patient[]> {
+    return await this.patientRepository.findAll({
+      where: {
+        a_cargo_id: userId
+      }
+    });
+  }
+
+
+   /**
+   * Obtiene todas las citas de todos los pacientes a cargo de un usuario
+   */
+   async getAllPatientsAppointmentsForCaretaker(userId: number): Promise<Appointment[]> {
+    console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ userId:", userId)
+    // Primero obtenemos los IDs de todos los pacientes a cargo del usuario
+    const patients = await this.getPatientsUnderUserCare(userId);
+    console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ patients:", patients)
+    const patientIds = patients.map(patient => patient.id);
+    console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ patientIds:", patientIds)
+
+    
+    // Si no hay pacientes a cargo, devolvemos un array vacío
+    if (patientIds.length === 0) {
+      return [];
+    }
+    
+    // Obtenemos todas las citas para esos pacientes
+    return await this.appointmentRepository.findAll({
+      where: {
+        patient_id: In(patientIds),
+      },
+      relations: ['professional', 'professional.user', 'appointmentType', 'patient'],
+      order: { start_time: 'DESC' } 
     });
   }
 

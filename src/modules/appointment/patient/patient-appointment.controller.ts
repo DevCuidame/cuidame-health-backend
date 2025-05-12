@@ -45,6 +45,30 @@ export class PatientAppointmentController {
     }
   };
 
+  getAllPatientsAppointments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        throw new BadRequestError('Usuario no autenticado');
+      }
+      
+      // Obtener todas las citas de todos los pacientes a cargo del usuario
+      const appointments = await this.patientAppointmentService.getAllPatientsAppointmentsForCaretaker(userId);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: appointments,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+
   /**
    * Obtener citas pasadas del paciente
    * @route GET /api/patient/appointments/past
