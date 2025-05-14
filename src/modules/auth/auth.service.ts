@@ -52,8 +52,10 @@ export class AuthService {
 async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   const { email, password } = credentials;
 
+  const normalizedEmail = email.toLowerCase();
+
   // Buscar usuario por email incluyendo el campo password
-  const user = await this.userRepository.findByEmail(email, true);
+  const user = await this.userRepository.findByEmail(normalizedEmail, true);
   if (!user) {
     throw new UnauthorizedError('Credenciales inválidas');
   }
@@ -115,7 +117,8 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     const enrichedPatients = await Promise.all(
       cared_persons.map(async (patient) => {
         // Remove imagebs64 from patient object to reduce size
-        const { imagebs64, ...patientWithoutImage } = patient;
+        // const { imagebs64, ...patientWithoutImage } = patient;
+        const { ...patientWithoutImage } = patient;
         
         // Obtener datos de salud para el paciente
         const [
@@ -192,7 +195,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       city_id: user.city_id,
       pubname: user.pubname,
       privname: user.privname,
-      // imagebs64: user.imagebs64,
+      imagebs64: user.imagebs64,
       path: user.path,
       role: roleName, // Incluir el rol del usuario en la respuesta
     },
@@ -286,7 +289,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     };
 
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: '7d', // El refresh token dura más tiempo
+      expiresIn: '30d', // El refresh token dura más tiempo
     });
   }
 
@@ -296,7 +299,13 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
    * @returns Respuesta de autenticación
    */
   async register(userData: IRegisterData): Promise<IAuthResponse> {
-    const { email, password } = userData;
+
+    const normalizedUserData = {
+      ...userData,
+      email: userData.email.toLowerCase()
+    };
+
+    const { email, password } = normalizedUserData;
   
     // Verificar si el email ya está registrado
     const existingUser = await this.userRepository.findByEmail(email);
@@ -305,7 +314,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     }
     
     // Verificar si el numero de identificación ya está registrado
-    const existingUserIdentification = await this.userRepository.findByIdentification(userData.numberid);
+    const existingUserIdentification = await this.userRepository.findByIdentification(normalizedUserData.numberid);
     if (existingUserIdentification) {
       throw new BadRequestError('No logramos registrar tu número de documento.');
     }
@@ -313,9 +322,9 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     // Generar hash de la contraseña
     const hashedPassword = PasswordService.hashPasswordMD5(password);
   
-    const imageBase64 = userData.imagebs64;
+    const imageBase64 = normalizedUserData.imagebs64;
     
-    const userDataToSave = { ...userData };
+    const userDataToSave = { ...normalizedUserData };
     delete userDataToSave.imagebs64;
   
     const newUser = await this.userRepository.create({

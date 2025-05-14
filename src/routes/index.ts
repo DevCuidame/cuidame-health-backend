@@ -48,9 +48,9 @@ router.use('/appointment-types', appointmentTypeRoutes);
 router.use('/availability', availabilityRoutes);
 router.use('/appointments', appointmentRoutes);
 
-router.use('/api/appointment-requests', appointmentRequestRoutes);
-router.use('/api/time-blocks', timeBlockRoutes);
-router.use('/api/notifications', notificationRoutes);
+router.use('/appointment-requests', appointmentRequestRoutes);
+router.use('/time-blocks', timeBlockRoutes);
+router.use('/notifications', notificationRoutes);
 
 router.use('/admin/appointments', adminAppointmentRoutes);
 router.use('/admin/professionals', professionalStatsRoutes);
@@ -62,7 +62,7 @@ router.use('/recurring-appointments', recurringAppointmentRoutes);
 router.use('/questionnaires', questionnaireRoutes);
 
 // Rutas de notificación actualizadas
-router.use('/api/notifications', notificationRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/admin/notifications', adminNotificationRoutes);
 
 router.use('/chat', chatRoutes);
