@@ -62,6 +62,31 @@ export class PatientController {
     }
   };
 
+
+  /**
+ * Obtiene la información completa de un paciente incluyendo datos de salud
+ * @route GET /api/patients/:id/health-data
+ */
+getPatientWithHealthData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const caregiverId = req.user?.id;
+    
+    const patient = await this.patientService.getPatientWithHealthData(id, caregiverId);
+    
+    const response: ApiResponse = {
+      success: true,
+      message: 'Paciente con datos de salud obtenido correctamente',
+      data: patient,
+      timestamp: new Date().toISOString()
+    };
+    
+    res.status(200).json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
   /**
    * Obtener detalles completos de un paciente
    * @route GET /api/patients/:id/details

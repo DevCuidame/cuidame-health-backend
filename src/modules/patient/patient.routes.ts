@@ -20,6 +20,13 @@ router.use(authMiddleware);
 router.get('/my-patients', patientController.getMyPatients);
 
 /**
+ * @route GET /api/patients/:id/health-data
+ * @desc Obtener un paciente con todos sus datos de salud
+ * @access Private
+ */
+router.get('/:id/health-data', patientController.getPatientWithHealthData);
+
+/**
  * @route GET /api/patients/search
  * @desc Search patients by name, lastname, or ID
  * @access Private

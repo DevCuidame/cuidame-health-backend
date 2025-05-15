@@ -9,6 +9,7 @@ import conditionRoutes from '../modules/condition/condition.routes';
 import codeRoutes from '../modules/code/code.routes';
 import vitalsRoutes from '../modules/vitals/vitals.routes';
 import contactRoutes from '../modules/contact/contact.routes';
+import healthDataRoutes from '../modules/health/health-data.routes';
 
 
 import healthProfessionalRoutes from '../modules/appointment/routes/health-professional.routes';
@@ -39,6 +40,7 @@ router.use('/locations', locationRoutes);
 router.use('/medical-info/batch', batchMedicalInfoRoutes);
 router.use('/medical-info/sync', syncMedicalInfoRoutes);
 router.use('/medical-info/condition', conditionRoutes);
+router.use('/health-data', healthDataRoutes);
 router.use('/code', codeRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/', vitalsRoutes);
