@@ -6,6 +6,8 @@
   
   const router = Router();
   const chatController = new ChatController();
+
+  router.use(authMiddleware);
   
   // Public routes
   router.post('/session', chatController.startSession);
@@ -13,7 +15,6 @@
   router.post('/message', chatController.sendMessage);
   
   // Protected routes (if needed)
-  // router.use(authMiddleware);
   // Add protected routes here
   
   export default router;

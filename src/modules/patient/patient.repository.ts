@@ -52,6 +52,27 @@ export class PatientRepository extends BaseRepository<Patient> {
     return count > 0;
   }
 
+
+   /**
+   * Verifica si ya existe un paciente con el mismo número de teléfono
+   * @param numeroid Número de telefono a verificar
+   * @param id ID del paciente a excluir (para actualizaciones)
+   * @returns true si el paciente ya existe, false en caso contrario
+   */
+   async existsByPhoneNumber(phone: string, id?: number): Promise<boolean> {
+    const query = this.repository
+      .createQueryBuilder('patient')
+      .where('patient.telefono = :telefono', { phone });
+
+    // Si se proporciona un ID, excluir ese paciente (para actualizaciones)
+    if (id) {
+      query.andWhere('patient.id != :id', { id });
+    }
+
+    const count = await query.getCount();
+    return count > 0;
+  }
+
   /**
    * Encuentra un paciente por número de identificación
    * @param numeroid Número de identificación

@@ -33,20 +33,20 @@ export class PatientService {
    * Crear un nuevo paciente
    * @param patientData Datos del paciente
    * @param caregiverId ID del cuidador que crea el paciente
-   * @returns Paciente creado
+   * @returns familiar creado
    */
   async createPatient(
     patientData: CreatePatientDto,
     caregiverId: number
   ): Promise<Patient> {
     try {
-      // Verificar si ya existe un paciente con el mismo número de identificación
+      // Verificar si ya existe un familiar con el mismo número de identificación
       const patientExists = await this.patientRepository.existsByNumeroid(
         patientData.numeroid
       );
       if (patientExists) {
         throw new BadRequestError(
-          `Ya existe un paciente con el número de identificación`
+          `Ya existe un familiar con el número de identificación`
         );
       }
   
@@ -115,7 +115,7 @@ export class PatientService {
               'Paciente'
             );
   
-            // Actualizar el objeto del paciente antes de devolverlo
+            // Actualizar el objeto del familiar antes de devolverlo
             patient.photourl = photoUrl;
           }
         } catch (error) {
@@ -147,10 +147,10 @@ export class PatientService {
   
 
   /**
-   * Obtener un paciente por ID
+   * Obtener un familiar por ID
    * @param patientId ID del paciente
    * @param caregiverId ID del cuidador (para verificar permisos)
-   * @returns Paciente encontrado
+   * @returns familiar encontrado
    */
   async getPatientById(
     patientId: number,
@@ -176,7 +176,7 @@ export class PatientService {
    * Obtener detalles completos de un paciente
    * @param patientId ID del paciente
    * @param caregiverId ID del cuidador (para verificar permisos)
-   * @returns Todos los datos del paciente y su información médica
+   * @returns Todos los datos del familiar y su información médica
    */
   async getPatientFullDetails(
     patientId: number,
@@ -243,7 +243,7 @@ export class PatientService {
    * @param patientId ID del paciente
    * @param patientData Datos a actualizar
    * @param caregiverId ID del cuidador (para verificar permisos)
-   * @returns Paciente actualizado
+   * @returns familiar actualizado
    */
   async updatePatient(
     patientId: number,
@@ -253,7 +253,7 @@ export class PatientService {
     // Verificar permisos
     const patient = await this.getPatientById(patientId, caregiverId);
   
-    // Si se está actualizando el número de identificación, verificar que no exista otro paciente con ese número
+    // Si se está actualizando el número de identificación, verificar que no exista otro familiar con ese número
     if (patientData.numeroid) {
       const patientExists = await this.patientRepository.existsByNumeroid(
         patientData.numeroid,
@@ -261,7 +261,7 @@ export class PatientService {
       );
       if (patientExists) {
         throw new BadRequestError(
-          `Ya existe un paciente con el número de identificación ${patientData.numeroid}`
+          `Ya existe un familiar con el número de identificación ${patientData.numeroid}`
         );
       }
     }
@@ -324,7 +324,7 @@ export class PatientService {
    * @param patientId ID del paciente
    * @param imageData Datos de la imagen (base64)
    * @param caregiverId ID del cuidador (para verificar permisos)
-   * @returns Paciente actualizado
+   * @returns familiar actualizado
    */
 
   async updatePatientImage(
@@ -378,7 +378,7 @@ export class PatientService {
     // Verificar permisos
     const patient = await this.getPatientById(patientId, caregiverId);
 
-    // Si el paciente tiene un hashcode, liberarlo para su reutilización
+    // Si el familiar tiene un hashcode, liberarlo para su reutilización
     if (patient.code) {
       await this.codeRepository.releaseCode(patient.code);
     }
@@ -397,10 +397,10 @@ export class PatientService {
   }
 
   /**
-   * Verificar si un paciente pertenece a un cuidador
+   * Verificar si un familiar pertenece a un cuidador
    * @param patientId ID del paciente
    * @param caregiverId ID del cuidador
-   * @returns True si el paciente pertenece al cuidador
+   * @returns True si el familiar pertenece al cuidador
    */
   async verifyPatientBelongsToCaregiver(
     patientId: number,

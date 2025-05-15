@@ -64,16 +64,16 @@ export class CreatePatientDto {
   ciudad?: string;
 
   @IsOptional({ message: 'El departamento es requerido' })
-  @IsNumber({}, { message: 'El departamento debe ser un número' })
+  @IsString({ message: 'El departamento debe ser una cadena de texto' })
   departamento?: string;
 
   @IsNotEmpty({ message: 'La dirección es requerida' })
   @IsString({ message: 'La dirección debe ser una cadena de texto' })
   direccion!: string;
 
-  @IsNotEmpty({ message: 'El grupo sanguíneo (RH) es requerido' })
+  @IsOptional()
   @IsString({ message: 'El grupo sanguíneo (RH) debe ser una cadena de texto' })
-  rh!: string;
+  rh?: string;
 
   @IsOptional()
   @IsString({ message: 'La EPS debe ser una cadena de texto' })

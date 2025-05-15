@@ -197,7 +197,7 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       privname: user.privname,
       imagebs64: user.imagebs64,
       path: user.path,
-      role: roleName, // Incluir el rol del usuario en la respuesta
+      role: roleName, 
     },
     access_token: token,
     refresh_token: refreshToken,
