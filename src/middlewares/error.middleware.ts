@@ -11,8 +11,8 @@ const sendErrorDev = (err: AppError, res: Response) => {
     success: false,
     status: err.status,
     message: err.message,
-    // stack: err.stack,
-    // error: err
+    stack: err.stack,
+    error: err
   });
 };
 
@@ -82,8 +82,6 @@ export const errorMiddleware = (
 
   if (config.env === 'development') {
     sendErrorDev(err, res);
-    let error = { ...err };
-    error.message = err.message;
   } else if (config.env === 'production') {
     let error = { ...err };
     error.message = err.message;

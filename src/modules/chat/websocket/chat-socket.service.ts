@@ -16,7 +16,7 @@ import { ChatSessionRepository } from '../chat-session.repository';
     private clients: Map<string, WebSocket>;
   
     constructor(server: http.Server) {
-      this.wss = new WebSocket.Server({ server, path: '/ws/chat' });
+      this.wss = new WebSocket.Server({ server, path: '/ws/chat', perMessageDeflate: false });
       this.chatBotService = new ChatBotService();
       this.chatSessionRepository = new ChatSessionRepository();
       this.chatMessageRepository = new ChatMessageRepository();
@@ -73,6 +73,11 @@ import { ChatSessionRepository } from '../chat-session.repository';
           logger.info(`WebSocket client disconnected: ${clientId}`);
           this.clients.delete(clientId);
         });
+      });
+      
+      this.wss.on('error', (error) => {
+        console.log("🚀 ~ ChatSocketService ~ this.wss.on ~ error:", error)
+        logger.error(`Error en servidor WebSocket: ${error}`);
       });
     }
   
