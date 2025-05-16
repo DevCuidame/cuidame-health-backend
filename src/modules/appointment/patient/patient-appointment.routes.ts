@@ -7,7 +7,7 @@ const router = Router();
 const patientAppointmentController = new PatientAppointmentController();
 
 // Todas las rutas requieren autenticación
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 /**
  * @route GET /api/patient/appointments/upcoming
