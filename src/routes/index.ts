@@ -43,7 +43,8 @@ router.use('/medical-info/condition', conditionRoutes);
 router.use('/health-data', healthDataRoutes);
 router.use('/code', codeRoutes);
 router.use('/contacts', contactRoutes);
-router.use('/', vitalsRoutes);
+router.use('/familiar/appointments', patientAppointmentRoutes);
+router.use('/chat', chatRoutes);
 
 router.use('/professionals', healthProfessionalRoutes);
 router.use('/appointment-types', appointmentTypeRoutes);
@@ -58,7 +59,6 @@ router.use('/admin/appointments', adminAppointmentRoutes);
 router.use('/admin/professionals', professionalStatsRoutes);
 router.use('/admin/export', exportRoutes);
 
-router.use('/patient/appointments', patientAppointmentRoutes);
 
 router.use('/recurring-appointments', recurringAppointmentRoutes);
 router.use('/questionnaires', questionnaireRoutes);
@@ -67,6 +67,6 @@ router.use('/questionnaires', questionnaireRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/admin/notifications', adminNotificationRoutes);
 
-router.use('/chat', chatRoutes);
+router.use('/', vitalsRoutes);
 
 export default router;
