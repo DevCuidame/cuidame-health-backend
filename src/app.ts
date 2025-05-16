@@ -5,38 +5,10 @@ import routes from './routes';
 import config from './core/config/environment';
 import logger from './utils/logger';
 import { corsMiddleware } from './middlewares/cors.middleware';
+import cors from 'cors';
 
 // Inicializar aplicación Express
 const app = express();
-
-// Explicitly handle OPTIONS requests at the application level
-app.options('*', (req, res) => {
-  // Get the origin from the request
-  const origin = req.headers.origin;
-  
-  // Define allowed origins
-  const allowedOrigins = [
-    'http://localhost:8100', 
-    'http://localhost:4200', 
-    'https://health.cuidame.tech'
-  ];
-  
-  // Set the proper origin based on the request
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else if (config.env === 'development') {
-    // In development mode, use wildcard if the origin is not in our list
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  
-  // Other CORS headers
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(204).end();
-});
-
-// Apply CORS middleware first, before anything else
 app.use(corsMiddleware);
 
 // Then setup other Express configurations
