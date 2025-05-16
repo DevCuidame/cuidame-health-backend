@@ -43,7 +43,7 @@ router.use('/medical-info/condition', conditionRoutes);
 router.use('/health-data', healthDataRoutes);
 router.use('/code', codeRoutes);
 router.use('/contacts', contactRoutes);
-router.use('/familiar/appointments', patientAppointmentRoutes);
+router.use('/patient/appointments', patientAppointmentRoutes);
 router.use('/chat', chatRoutes);
 
 router.use('/professionals', healthProfessionalRoutes);
