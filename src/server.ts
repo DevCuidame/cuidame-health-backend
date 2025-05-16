@@ -2,16 +2,16 @@ import app from './app';
 import config from './core/config/environment';
 import logger from './utils/logger';
 import { ChatSocketService } from './modules/chat/websocket/chat-socket.service';
-
+import http from 'http';
 
 // Establecer puerto
 const PORT = config.server.port;
 const HOST = config.server.host;
 
-
+const server = http.createServer(app);
 
 // Iniciar servidor
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info(`🚀 Servidor ejecutándose en http://${HOST}:${PORT}`);
   logger.info(`📚 API disponible en http://${HOST}:${PORT}${config.server.apiPrefix}`);
   logger.info(`🌍 Entorno: ${config.env}`);

@@ -16,6 +16,11 @@ router.use(authMiddleware);
  */
 router.get('/upcoming', patientAppointmentController.getUpcomingAppointments);
 
+/**
+ * IMPORTANTE: Agregamos un endpoint raíz que maneje la ruta base
+ */
+router.get('/', patientAppointmentController.getAllPatientsAppointments);
+
 
 /**
  * @route GET /api/patient/appointments/all
