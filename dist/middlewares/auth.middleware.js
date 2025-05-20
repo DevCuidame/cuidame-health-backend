@@ -13,7 +13,6 @@ const database_1 = require("../core/config/database");
  */
 const authMiddleware = async (req, res, next) => {
     try {
-        // 1) Obtener token y comprobar si existe
         let token;
         if (req.headers.authorization &&
             req.headers.authorization.startsWith('Bearer')) {

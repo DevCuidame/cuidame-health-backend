@@ -6,8 +6,7 @@ const patientAppointmentController = new PatientAppointmentController();
 
 
 const router = Router();
-// Todas las rutas requieren autenticación
-// router.use(authMiddleware);
+router.use(authMiddleware);
 
 console.log("Cargando rutas de citas del paciente")
 

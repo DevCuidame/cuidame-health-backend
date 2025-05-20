@@ -22,7 +22,6 @@ export const authMiddleware = async (
   next: NextFunction
 ) => {
   try {
-    // 1) Obtener token y comprobar si existe
     let token;
     if (
       req.headers.authorization &&

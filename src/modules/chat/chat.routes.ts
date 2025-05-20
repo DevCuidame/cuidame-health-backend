@@ -14,7 +14,4 @@
   router.get('/session/:sessionId', chatController.getSession);
   router.post('/message', chatController.sendMessage);
   
-  // Protected routes (if needed)
-  // Add protected routes here
-  
   export default router;
