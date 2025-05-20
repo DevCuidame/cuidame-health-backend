@@ -60,7 +60,7 @@ async function diagnoseRoutes() {
     // 3. Iniciar servidor de prueba
     console.log('\n3️⃣ Iniciando servidor de prueba...');
     
-    const PORT = 5015;
+    const PORT = 4000;
     const server = app.listen(PORT, () => {
       console.log(`🧪 Servidor de diagnóstico en puerto ${PORT}`);
       
