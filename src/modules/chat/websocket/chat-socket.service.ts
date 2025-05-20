@@ -1,6 +1,7 @@
 // src/modules/chat/websocket/chat-socket.service.ts
 import WebSocket from 'ws';
 import http from 'http';
+import url from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatBotService } from '../chat-bot.service';
 import { ChatMessageRepository } from '../chat-message.repository';
@@ -15,15 +16,25 @@ export class ChatSocketService {
   private clients: Map<string, WebSocket>;
 
   constructor(server: http.Server) {
+    logger.info('🔧 Initializing ChatSocketService...');
     // More specific WebSocket server configuration
     this.wss = new WebSocket.Server({ 
-      server, 
+      server,
       path: '/ws/chat',
       perMessageDeflate: false,
       maxPayload: 1024 * 1024, // 1MB
-      handleProtocols: (protocols: any, request) => {
-        logger.info('WebSocket protocols requested:', protocols);
-        return protocols[0] || 'echo-protocol';
+      clientTracking: true,
+      verifyClient: (info: any) => {
+        const pathname = url.parse(info.req.url || '').pathname;
+        logger.info(`🔍 WebSocket connection attempt to: ${pathname}`);
+        
+        if (pathname === '/ws/chat') {
+          logger.info(`✅ WebSocket connection verified for /ws/chat`);
+          return true;
+        }
+        
+        logger.warn(`❌ WebSocket connection rejected for: ${pathname}`);
+        return false;
       }
     });
     
@@ -33,6 +44,7 @@ export class ChatSocketService {
     this.clients = new Map();
     
     this.initialize();
+    logger.info('✅ ChatSocketService initialized successfully');
   }
 
   private initialize(): void {

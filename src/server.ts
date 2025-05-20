@@ -8,23 +8,53 @@ import http from 'http';
 const PORT = config.server.port;
 const HOST = config.server.host;
 
+// Crear servidor HTTP
 const server = http.createServer(app);
+
+// IMPORTANTE: Inicializar WebSocket ANTES de que el servidor comience a escuchar
+let chatSocketService: ChatSocketService;
+
+try {
+  chatSocketService = new ChatSocketService(server);
+  logger.info(`✅ WebSocket Chat service initialized`);
+} catch (error) {
+  logger.error(`❌ Error al inicializar el WebSocket: ${error}`);
+  process.exit(1);
+}
+
+// Verificar que el WebSocket Server esté listo
+server.on('upgrade', (request, socket, head) => {
+  logger.info(`🔄 WebSocket upgrade request received for: ${request.url}`);
+  
+  if (request.url === '/ws/chat') {
+    logger.info(`✅ WebSocket upgrade approved for /ws/chat`);
+    // El WebSocket Server debe manejar esto automáticamente
+  } else {
+    logger.warn(`❌ WebSocket upgrade rejected for: ${request.url}`);
+    socket.destroy();
+  }
+});
 
 // Iniciar servidor
 server.listen(PORT, () => {
   logger.info(`🚀 Servidor ejecutándose en http://${HOST}:${PORT}`);
   logger.info(`📚 API disponible en http://${HOST}:${PORT}${config.server.apiPrefix}`);
+  logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
   logger.info(`🌍 Entorno: ${config.env}`);
+  
+  // Log adicional para verificar que el WebSocket esté funcionando
+  logger.info(`🔍 WebSocket server address: ${JSON.stringify(server.address())}`);
 });
 
-
-// Inicializar servicio de WebSocket y mostrar información
-try {
-  const chatSocketService = new ChatSocketService(server);
-  logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
-} catch (error) {
-  logger.error(`❌ Error al inicializar el WebSocket: ${error}`);
-}
+// Manejar errores del servidor
+server.on('error', (error: any) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`❌ Puerto ${PORT} ya está en uso`);
+  } else {
+    logger.error(`❌ Error del servidor: ${error}`);
+  }
+  process.exit(1);
+});
 
 // Manejar señales de terminación
 process.on('SIGTERM', () => {
