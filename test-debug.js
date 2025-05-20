@@ -50,7 +50,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Not found in test server', url: req.originalUrl });
 });
 
-const PORT = 5003;
+const PORT = 5005;
 app.listen(PORT, () => {
   console.log(`🧪 Debug server running on port ${PORT}`);
 });
