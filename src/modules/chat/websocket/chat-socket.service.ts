@@ -21,7 +21,6 @@ import { ChatSessionRepository } from '../chat-session.repository';
       this.chatSessionRepository = new ChatSessionRepository();
       this.chatMessageRepository = new ChatMessageRepository();
       this.clients = new Map();
-      console.log("WebSocket server inicializado en la ruta /ws/chat");
       
       this.initialize();
     }

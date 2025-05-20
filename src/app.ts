@@ -12,7 +12,7 @@ const app = express();
 app.use(corsMiddleware);
 
 // Then setup other Express configurations
-const configuredApp = setupExpress(app);
+setupExpress(app);
 
 // Definir ruta de la API
 app.use(config.server.apiPrefix, routes);
@@ -22,7 +22,7 @@ app.use('*', (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: `Ruta no encontrada: ${req.originalUrl}`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

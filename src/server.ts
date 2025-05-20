@@ -21,7 +21,6 @@ server.listen(PORT, () => {
 // Inicializar servicio de WebSocket y mostrar información
 try {
   const chatSocketService = new ChatSocketService(server);
-  console.log("🚀 ~ chatSocketService:", chatSocketService)
   logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
 } catch (error) {
   logger.error(`❌ Error al inicializar el WebSocket: ${error}`);

@@ -2,12 +2,19 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../../middlewares/auth.middleware';
 import { PatientAppointmentController } from './patient-appointment.controller';
-
-const router = Router();
 const patientAppointmentController = new PatientAppointmentController();
 
+
+const router = Router();
 // Todas las rutas requieren autenticación
 // router.use(authMiddleware);
+
+console.log("Cargando rutas de citas del paciente")
+
+router.get('/ping', (req, res) => {
+    res.json({ success: true, message: 'pong' });
+  });
+  
 
 /**
  * @route GET /api/patient/appointments/upcoming
