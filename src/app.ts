@@ -5,20 +5,45 @@ import routes from './routes';
 import config from './core/config/environment';
 import logger from './utils/logger';
 import { corsMiddleware } from './middlewares/cors.middleware';
-import cors from 'cors';
 
 // Inicializar aplicación Express
 const app = express();
+
+// IMPORTANTE: CORS debe ir PRIMERO
 app.use(corsMiddleware);
 
-// Then setup other Express configurations
+// Luego configuraciones básicas de Express
 setupExpress(app);
 
-// Definir ruta de la API
+// Middleware de logging para debug
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`📥 ${req.method} ${req.url}`);
+  next();
+});
+
+// Ruta de health check ANTES de las rutas principales
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'API is running',
+    timestamp: new Date(),
+    environment: config.env,
+  });
+});
+
+// IMPORTANTE: Definir rutas de la API
+logger.info(`🔧 Mounting routes on: ${config.server.apiPrefix}`);
 app.use(config.server.apiPrefix, routes);
 
-// Ruta 404 para rutas no encontradas
+// Middleware de debug para ver qué rutas están registradas
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.warn(`🔍 Route not found: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Ruta 404 para rutas no encontradas (DEBE IR AL FINAL)
 app.use('*', (req: Request, res: Response) => {
+  logger.error(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     success: false,
     message: `Ruta no encontrada: ${req.originalUrl}`,
@@ -41,6 +66,19 @@ const initializeDatabase = async (): Promise<void> => {
 const initializeApp = async (): Promise<void> => {
   try {
     await initializeDatabase();
+    
+    // Debug: Mostrar rutas registradas
+    app._router.stack.forEach((middleware: any) => {
+      if (middleware.route) {
+        logger.info(`📍 Route: ${middleware.route.path}`);
+      } else if (middleware.name === 'router') {
+        middleware.handle.stack.forEach((handler: any) => {
+          if (handler.route) {
+            logger.info(`📍 Nested Route: ${handler.route.path}`);
+          }
+        });
+      }
+    });
     
     logger.info('✅ Aplicación inicializada correctamente');
   } catch (error) {
