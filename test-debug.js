@@ -53,9 +53,4 @@ app.use('*', (req, res) => {
 const PORT = 5003;
 app.listen(PORT, () => {
   console.log(`🧪 Debug server running on port ${PORT}`);
-  console.log('Test these endpoints:');
-  console.log(`  curl http://localhost:${PORT}/debug`);
-  console.log(`  curl http://localhost:${PORT}/direct-chat/test`);
-  console.log(`  curl http://localhost:${PORT}/api/chat/test`);
-  console.log(`  curl -X POST http://localhost:${PORT}/api/chat/session`);
 });
