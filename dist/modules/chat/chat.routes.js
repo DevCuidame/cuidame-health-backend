@@ -5,6 +5,7 @@ const express_1 = require("express");
 const chat_controller_1 = require("./chat.controller");
 const router = (0, express_1.Router)();
 const chatController = new chat_controller_1.ChatController();
+console.log("Cargando rutas de citas del chat");
 // Public routes
 router.post('/session', chatController.startSession);
 router.get('/session/:sessionId', chatController.getSession);

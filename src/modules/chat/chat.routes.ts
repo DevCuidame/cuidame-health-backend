@@ -6,6 +6,9 @@
   const router = Router();
   const chatController = new ChatController();
 
+console.log("Cargando rutas de citas del chat")
+
+
   // Public routes
   router.post('/session', chatController.startSession);
   router.get('/session/:sessionId', chatController.getSession);
