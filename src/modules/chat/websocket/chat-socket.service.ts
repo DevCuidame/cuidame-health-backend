@@ -1,89 +1,147 @@
- 
-  // src/modules/chat/websocket/chat-socket.service.ts
-  import WebSocket from 'ws';
-  import http from 'http';
-  import { v4 as uuidv4 } from 'uuid';
-  import { ChatBotService } from '../chat-bot.service';
-  import { ChatMessageRepository } from '../chat-message.repository';
-  import logger from '../../../utils/logger';
+// src/modules/chat/websocket/chat-socket.service.ts
+import WebSocket from 'ws';
+import http from 'http';
+import { v4 as uuidv4 } from 'uuid';
+import { ChatBotService } from '../chat-bot.service';
+import { ChatMessageRepository } from '../chat-message.repository';
+import logger from '../../../utils/logger';
 import { ChatSessionRepository } from '../chat-session.repository';
-  
-  export class ChatSocketService {
-    private wss: WebSocket.Server;
-    private chatBotService: ChatBotService;
-    private chatSessionRepository: ChatSessionRepository;
-    private chatMessageRepository: ChatMessageRepository;
-    private clients: Map<string, WebSocket>;
-  
-    constructor(server: http.Server) {
-      this.wss = new WebSocket.Server({ server, path: '/ws/chat', perMessageDeflate: false });
-      this.chatBotService = new ChatBotService();
-      this.chatSessionRepository = new ChatSessionRepository();
-      this.chatMessageRepository = new ChatMessageRepository();
-      this.clients = new Map();
+
+export class ChatSocketService {
+  private wss: WebSocket.Server;
+  private chatBotService: ChatBotService;
+  private chatSessionRepository: ChatSessionRepository;
+  private chatMessageRepository: ChatMessageRepository;
+  private clients: Map<string, WebSocket>;
+
+  constructor(server: http.Server) {
+    // More specific WebSocket server configuration
+    this.wss = new WebSocket.Server({ 
+      server, 
+      path: '/ws/chat',
+      perMessageDeflate: false,
+      maxPayload: 1024 * 1024, // 1MB
+      handleProtocols: (protocols: any, request) => {
+        logger.info('WebSocket protocols requested:', protocols);
+        return protocols[0] || 'echo-protocol';
+      }
+    });
+    
+    this.chatBotService = new ChatBotService();
+    this.chatSessionRepository = new ChatSessionRepository();
+    this.chatMessageRepository = new ChatMessageRepository();
+    this.clients = new Map();
+    
+    this.initialize();
+  }
+
+  private initialize(): void {
+    // Log when server is ready
+    this.wss.on('listening', () => {
+      logger.info('WebSocket server is listening on /ws/chat');
+    });
+
+    this.wss.on('connection', (ws: WebSocket, request) => {
+      // Generate client ID
+      const clientId = uuidv4();
+      this.clients.set(clientId, ws);
       
-      this.initialize();
-    }
-  
-    private initialize(): void {
-      this.wss.on('connection', (ws: WebSocket) => {
-        // Generate client ID
-        const clientId = uuidv4();
-        this.clients.set(clientId, ws);
-        
-        logger.info(`WebSocket client connected: ${clientId}`);
-        
-        // Send welcome message
-        ws.send(JSON.stringify({
-          type: 'connection',
-          clientId,
-          message: 'Conectado al servidor de chat'
-        }));
-        
-        // Handle messages
-        ws.on('message', async (message: string) => {
+      logger.info(`WebSocket client connected: ${clientId} from ${request.socket.remoteAddress}`);
+      
+      // Send welcome message
+      ws.send(JSON.stringify({
+        type: 'connection',
+        clientId,
+        message: 'Conectado al servidor de chat'
+      }));
+      
+      // Handle messages
+      ws.on('message', async (message: string) => {
+        try {
+          let data;
           try {
-            const data = JSON.parse(message);
-            
-            switch (data.type) {
-              case 'init':
-                await this.handleInitMessage(clientId, ws, data);
-                break;
-              case 'message':
-                await this.handleChatMessage(clientId, ws, data);
-                break;
-              default:
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'Tipo de mensaje no reconocido'
-                }));
-            }
-          } catch (error) {
-            logger.error(`Error handling WebSocket message: ${error}`);
+            data = JSON.parse(message);
+          } catch (parseError) {
+            logger.error(`Invalid JSON received: ${message}`);
             ws.send(JSON.stringify({
               type: 'error',
-              message: 'Error al procesar el mensaje'
+              message: 'Formato de mensaje inválido'
             }));
+            return;
           }
-        });
-        
-        // Handle close
-        ws.on('close', () => {
-          logger.info(`WebSocket client disconnected: ${clientId}`);
-          this.clients.delete(clientId);
-        });
+          
+          logger.info(`Message received from ${clientId}:`, data);
+          
+          switch (data.type) {
+            case 'init':
+              await this.handleInitMessage(clientId, ws, data);
+              break;
+            case 'message':
+              await this.handleChatMessage(clientId, ws, data);
+              break;
+            case 'ping':
+              ws.send(JSON.stringify({ type: 'pong' }));
+              break;
+            default:
+              logger.warn(`Unknown message type: ${data.type}`);
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Tipo de mensaje no reconocido'
+              }));
+          }
+        } catch (error) {
+          logger.error(`Error handling WebSocket message from ${clientId}:`, error);
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Error interno al procesar el mensaje'
+          }));
+        }
       });
       
-      this.wss.on('error', (error) => {
-        console.log("🚀 ~ ChatSocketService ~ this.wss.on ~ error:", error)
-        logger.error(`Error en servidor WebSocket: ${error}`);
+      // Handle pong
+      ws.on('pong', () => {
+        logger.debug(`Pong received from ${clientId}`);
       });
-    }
-  
-    /**
-     * Handle initialization message
-     */
-    private async handleInitMessage(clientId: string, ws: WebSocket, data: any): Promise<void> {
+      
+      // Handle close
+      ws.on('close', (code, reason) => {
+        logger.info(`WebSocket client disconnected: ${clientId}, code: ${code}, reason: ${reason}`);
+        this.clients.delete(clientId);
+      });
+
+      // Handle errors
+      ws.on('error', (error) => {
+        logger.error(`WebSocket error for client ${clientId}:`, error);
+        this.clients.delete(clientId);
+      });
+    });
+    
+    this.wss.on('error', (error) => {
+      logger.error(`WebSocket Server Error:`, error);
+    });
+
+    // Set up ping interval to keep connections alive
+    setInterval(() => {
+      this.clients.forEach((ws, clientId) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.ping();
+          } catch (error) {
+            logger.error(`Error pinging client ${clientId}:`, error);
+            this.clients.delete(clientId);
+          }
+        } else {
+          this.clients.delete(clientId);
+        }
+      });
+    }, 30000); // Ping every 30 seconds
+  }
+
+  /**
+   * Handle initialization message
+   */
+  private async handleInitMessage(clientId: string, ws: WebSocket, data: any): Promise<void> {
+    try {
       let session;
       
       if (data.sessionId) {
@@ -113,63 +171,77 @@ import { ChatSessionRepository } from '../chat-session.repository';
           type: 'init',
           sessionId: session.session_id,
           messages: [{
-            content: '👋 ¡Bienvenido al sistema de agendamiento de citas médicas! Por favor, ingresa tu número de documento (cédula) para continuar:',
+            content: '👋 ¡Hola, me llamo Eli! ¡Bienvenido al sistema de agendamiento de citas médicas! Por favor, ingresa tu número de documento (cédula) para continuar:',
             sender: 'bot',
             timestamp: new Date()
           }]
         }));
       }
-    }
-  
-    /**
-     * Handle chat message
-     */
-    private async handleChatMessage(clientId: string, ws: WebSocket, data: any): Promise<void> {
-      if (!data.sessionId || !data.message) {
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Session ID y mensaje son requeridos'
-        }));
-        return;
-      }
       
-      try {
-        // Process message
-        await this.chatBotService.processMessage(data.sessionId, data.message);
+      logger.info(`Session initialized for client ${clientId}: ${session.session_id}`);
+    } catch (error) {
+      logger.error(`Error initializing session for client ${clientId}:`, error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Error al inicializar la sesión'
+      }));
+    }
+  }
+
+  /**
+   * Handle chat message
+   */
+  private async handleChatMessage(clientId: string, ws: WebSocket, data: any): Promise<void> {
+    if (!data.sessionId || !data.message) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Session ID y mensaje son requeridos'
+      }));
+      return;
+    }
+    
+    try {
+      logger.info(`Processing message for session ${data.sessionId}: ${data.message}`);
+      
+      // Process message
+      await this.chatBotService.processMessage(data.sessionId, data.message);
+      
+      // Get all bot responses since user's message
+      const messages = await this.chatMessageRepository.findBySessionId(data.sessionId);
+      
+      // Find index of user's last message
+      const userMessageIndex = messages.findIndex((m: any) => 
+        m.direction === 'incoming' && m.message_content === data.message
+      );
+      
+      if (userMessageIndex >= 0) {
+        // Get all bot messages after user's message
+        const newMessages = messages
+          .slice(userMessageIndex + 1)
+          .filter((m:any) => m.direction === 'outgoing')
+          .map((m:any) => ({
+            content: m.message_content,
+            sender: 'bot',
+            timestamp: m.created_at
+          }));
         
-        // Get all bot responses since user's message
-        const messages = await this.chatMessageRepository.findBySessionId(data.sessionId);
-        
-        // Find index of user's last message
-        const userMessageIndex = messages.findIndex((m: any) => 
-          m.direction === 'incoming' && m.message_content === data.message
-        );
-        
-        if (userMessageIndex >= 0) {
-          // Get all bot messages after user's message
-          const newMessages = messages
-            .slice(userMessageIndex + 1)
-            .filter((m:any) => m.direction === 'outgoing')
-            .map((m:any) => ({
-              content: m.message_content,
-              sender: 'bot',
-              timestamp: m.created_at
-            }));
-          
-          // Send bot responses to client
+        // Send bot responses to client
+        if (newMessages.length > 0) {
           ws.send(JSON.stringify({
             type: 'message',
             messages: newMessages
           }));
+          
+          logger.info(`Sent ${newMessages.length} bot responses to client ${clientId}`);
         }
-      } catch (error) {
-        logger.error(`Error processing chat message: ${error}`);
-        
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Error al procesar el mensaje'
-        }));
       }
+    } catch (error) {
+      logger.error(`Error processing chat message from ${clientId}:`, error);
+      
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Error al procesar el mensaje'
+      }));
     }
   }
-  
+}

@@ -7,7 +7,7 @@ export const corsMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  // Si es una solicitud de upgrade de WebSocket, permite la conexión
+  // Skip CORS for WebSocket upgrade requests
   if (
     req.headers.upgrade &&
     req.headers.upgrade.toLowerCase() === 'websocket'
@@ -20,45 +20,41 @@ export const corsMiddleware = (
     'http://localhost:8100',
     'http://localhost:4200',
     'https://health.cuidame.tech',
+    '*'
   ];
 
   // Get the origin from the request
   const origin = req.headers.origin;
 
-  // Check if the origin is allowed or if we're in development
+  // Always set CORS headers for API requests
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With'
-    );
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    console.log('CORS headers set for origin:', origin);
   } else if (config.env === 'development') {
     // In development, allow any origin
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With'
-    );
-    console.log('CORS headers set for development');
+  } else {
+    // In production, allow the main frontend origin
+    res.setHeader('Access-Control-Allow-Origin', 'https://health.cuidame.tech');
   }
+
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+  );
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
-    res.status(204).end();
+    console.log('Handling OPTIONS request for:', req.path);
+    res.status(200).end();
     return;
   }
 
-  // Siempre llama a next() para solicitudes no-OPTIONS
+  // Always call next() for non-OPTIONS requests
   next();
 };

@@ -78,12 +78,8 @@ class PatientAppointmentService {
     * Obtiene todas las citas de todos los pacientes a cargo de un usuario
     */
     async getAllPatientsAppointmentsForCaretaker(userId) {
-        console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ userId:", userId);
-        // Primero obtenemos los IDs de todos los pacientes a cargo del usuario
         const patients = await this.getPatientsUnderUserCare(userId);
-        console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ patients:", patients);
         const patientIds = patients.map(patient => patient.id);
-        console.log("🚀 ~ PatientAppointmentService ~ getAllPatientsAppointmentsForCaretaker ~ patientIds:", patientIds);
         // Si no hay pacientes a cargo, devolvemos un array vacío
         if (patientIds.length === 0) {
             return [];

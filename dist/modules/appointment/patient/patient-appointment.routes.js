@@ -6,7 +6,6 @@ const auth_middleware_1 = require("../../../middlewares/auth.middleware");
 const patient_appointment_controller_1 = require("./patient-appointment.controller");
 const patientAppointmentController = new patient_appointment_controller_1.PatientAppointmentController();
 const router = (0, express_1.Router)();
-// Todas las rutas requieren autenticación
 router.use(auth_middleware_1.authMiddleware);
 console.log("Cargando rutas de citas del paciente");
 router.get('/ping', (req, res) => {

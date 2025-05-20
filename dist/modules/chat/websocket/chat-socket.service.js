@@ -18,7 +18,17 @@ class ChatSocketService {
     chatMessageRepository;
     clients;
     constructor(server) {
-        this.wss = new ws_1.default.Server({ server, path: '/ws/chat', perMessageDeflate: false });
+        // More specific WebSocket server configuration
+        this.wss = new ws_1.default.Server({
+            server,
+            path: '/ws/chat',
+            perMessageDeflate: false,
+            maxPayload: 1024 * 1024, // 1MB
+            handleProtocols: (protocols, request) => {
+                logger_1.default.info('WebSocket protocols requested:', protocols);
+                return protocols[0] || 'echo-protocol';
+            }
+        });
         this.chatBotService = new chat_bot_service_1.ChatBotService();
         this.chatSessionRepository = new chat_session_repository_1.ChatSessionRepository();
         this.chatMessageRepository = new chat_message_repository_1.ChatMessageRepository();
@@ -26,11 +36,15 @@ class ChatSocketService {
         this.initialize();
     }
     initialize() {
-        this.wss.on('connection', (ws) => {
+        // Log when server is ready
+        this.wss.on('listening', () => {
+            logger_1.default.info('WebSocket server is listening on /ws/chat');
+        });
+        this.wss.on('connection', (ws, request) => {
             // Generate client ID
             const clientId = (0, uuid_1.v4)();
             this.clients.set(clientId, ws);
-            logger_1.default.info(`WebSocket client connected: ${clientId}`);
+            logger_1.default.info(`WebSocket client connected: ${clientId} from ${request.socket.remoteAddress}`);
             // Send welcome message
             ws.send(JSON.stringify({
                 type: 'connection',
@@ -40,7 +54,19 @@ class ChatSocketService {
             // Handle messages
             ws.on('message', async (message) => {
                 try {
-                    const data = JSON.parse(message);
+                    let data;
+                    try {
+                        data = JSON.parse(message);
+                    }
+                    catch (parseError) {
+                        logger_1.default.error(`Invalid JSON received: ${message}`);
+                        ws.send(JSON.stringify({
+                            type: 'error',
+                            message: 'Formato de mensaje inválido'
+                        }));
+                        return;
+                    }
+                    logger_1.default.info(`Message received from ${clientId}:`, data);
                     switch (data.type) {
                         case 'init':
                             await this.handleInitMessage(clientId, ws, data);
@@ -48,7 +74,11 @@ class ChatSocketService {
                         case 'message':
                             await this.handleChatMessage(clientId, ws, data);
                             break;
+                        case 'ping':
+                            ws.send(JSON.stringify({ type: 'pong' }));
+                            break;
                         default:
+                            logger_1.default.warn(`Unknown message type: ${data.type}`);
                             ws.send(JSON.stringify({
                                 type: 'error',
                                 message: 'Tipo de mensaje no reconocido'
@@ -56,58 +86,93 @@ class ChatSocketService {
                     }
                 }
                 catch (error) {
-                    logger_1.default.error(`Error handling WebSocket message: ${error}`);
+                    logger_1.default.error(`Error handling WebSocket message from ${clientId}:`, error);
                     ws.send(JSON.stringify({
                         type: 'error',
-                        message: 'Error al procesar el mensaje'
+                        message: 'Error interno al procesar el mensaje'
                     }));
                 }
             });
+            // Handle pong
+            ws.on('pong', () => {
+                logger_1.default.debug(`Pong received from ${clientId}`);
+            });
             // Handle close
-            ws.on('close', () => {
-                logger_1.default.info(`WebSocket client disconnected: ${clientId}`);
+            ws.on('close', (code, reason) => {
+                logger_1.default.info(`WebSocket client disconnected: ${clientId}, code: ${code}, reason: ${reason}`);
+                this.clients.delete(clientId);
+            });
+            // Handle errors
+            ws.on('error', (error) => {
+                logger_1.default.error(`WebSocket error for client ${clientId}:`, error);
                 this.clients.delete(clientId);
             });
         });
         this.wss.on('error', (error) => {
-            console.log("🚀 ~ ChatSocketService ~ this.wss.on ~ error:", error);
-            logger_1.default.error(`Error en servidor WebSocket: ${error}`);
+            logger_1.default.error(`WebSocket Server Error:`, error);
         });
+        // Set up ping interval to keep connections alive
+        setInterval(() => {
+            this.clients.forEach((ws, clientId) => {
+                if (ws.readyState === ws_1.default.OPEN) {
+                    try {
+                        ws.ping();
+                    }
+                    catch (error) {
+                        logger_1.default.error(`Error pinging client ${clientId}:`, error);
+                        this.clients.delete(clientId);
+                    }
+                }
+                else {
+                    this.clients.delete(clientId);
+                }
+            });
+        }, 30000); // Ping every 30 seconds
     }
     /**
      * Handle initialization message
      */
     async handleInitMessage(clientId, ws, data) {
-        let session;
-        if (data.sessionId) {
-            // Try to resume existing session
-            session = await this.chatBotService.getOrCreateSession(data.sessionId);
-            // Get previous messages
-            const messages = await this.chatMessageRepository.findBySessionId(session.session_id);
-            // Send previous messages to client
-            ws.send(JSON.stringify({
-                type: 'init',
-                sessionId: session.session_id,
-                messages: messages.map((m) => ({
-                    content: m.message_content,
-                    sender: m.direction === 'outgoing' ? 'bot' : 'user',
-                    timestamp: m.created_at,
-                    sessionId: m.session_id
-                }))
-            }));
+        try {
+            let session;
+            if (data.sessionId) {
+                // Try to resume existing session
+                session = await this.chatBotService.getOrCreateSession(data.sessionId);
+                // Get previous messages
+                const messages = await this.chatMessageRepository.findBySessionId(session.session_id);
+                // Send previous messages to client
+                ws.send(JSON.stringify({
+                    type: 'init',
+                    sessionId: session.session_id,
+                    messages: messages.map((m) => ({
+                        content: m.message_content,
+                        sender: m.direction === 'outgoing' ? 'bot' : 'user',
+                        timestamp: m.created_at,
+                        sessionId: m.session_id
+                    }))
+                }));
+            }
+            else {
+                // Create new session
+                session = await this.chatBotService.startNewSession();
+                // Send welcome message
+                ws.send(JSON.stringify({
+                    type: 'init',
+                    sessionId: session.session_id,
+                    messages: [{
+                            content: '👋 ¡Hola, me llamo Eli! ¡Bienvenido al sistema de agendamiento de citas médicas! Por favor, ingresa tu número de documento (cédula) para continuar:',
+                            sender: 'bot',
+                            timestamp: new Date()
+                        }]
+                }));
+            }
+            logger_1.default.info(`Session initialized for client ${clientId}: ${session.session_id}`);
         }
-        else {
-            // Create new session
-            session = await this.chatBotService.startNewSession();
-            // Send welcome message
+        catch (error) {
+            logger_1.default.error(`Error initializing session for client ${clientId}:`, error);
             ws.send(JSON.stringify({
-                type: 'init',
-                sessionId: session.session_id,
-                messages: [{
-                        content: '👋 ¡Bienvenido al sistema de agendamiento de citas médicas! Por favor, ingresa tu número de documento (cédula) para continuar:',
-                        sender: 'bot',
-                        timestamp: new Date()
-                    }]
+                type: 'error',
+                message: 'Error al inicializar la sesión'
             }));
         }
     }
@@ -123,6 +188,7 @@ class ChatSocketService {
             return;
         }
         try {
+            logger_1.default.info(`Processing message for session ${data.sessionId}: ${data.message}`);
             // Process message
             await this.chatBotService.processMessage(data.sessionId, data.message);
             // Get all bot responses since user's message
@@ -140,14 +206,17 @@ class ChatSocketService {
                     timestamp: m.created_at
                 }));
                 // Send bot responses to client
-                ws.send(JSON.stringify({
-                    type: 'message',
-                    messages: newMessages
-                }));
+                if (newMessages.length > 0) {
+                    ws.send(JSON.stringify({
+                        type: 'message',
+                        messages: newMessages
+                    }));
+                    logger_1.default.info(`Sent ${newMessages.length} bot responses to client ${clientId}`);
+                }
             }
         }
         catch (error) {
-            logger_1.default.error(`Error processing chat message: ${error}`);
+            logger_1.default.error(`Error processing chat message from ${clientId}:`, error);
             ws.send(JSON.stringify({
                 type: 'error',
                 message: 'Error al procesar el mensaje'
