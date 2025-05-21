@@ -16,7 +16,6 @@ export class ChatSocketService {
   private clients: Map<string, WebSocket>;
 
   constructor(server: http.Server) {
-    logger.info('🔧 Initializing ChatSocketService...');
     // More specific WebSocket server configuration
     this.wss = new WebSocket.Server({ 
       server,
@@ -44,7 +43,6 @@ export class ChatSocketService {
     this.clients = new Map();
     
     this.initialize();
-    logger.info('✅ ChatSocketService initialized successfully');
   }
 
   private initialize(): void {

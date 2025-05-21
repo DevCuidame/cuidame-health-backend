@@ -41,9 +41,6 @@ server.listen(PORT, () => {
   logger.info(`📚 API disponible en http://${HOST}:${PORT}${config.server.apiPrefix}`);
   logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
   logger.info(`🌍 Entorno: ${config.env}`);
-  
-  // Log adicional para verificar que el WebSocket esté funcionando
-  logger.info(`🔍 WebSocket server address: ${JSON.stringify(server.address())}`);
 });
 
 // Manejar errores del servidor

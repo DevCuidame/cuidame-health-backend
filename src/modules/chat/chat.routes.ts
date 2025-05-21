@@ -6,9 +6,6 @@ import logger from '../../utils/logger';
 const router = Router();
 const chatController = new ChatController();
 
-logger.info('🔧 Configurando rutas de chat...');
-
-// Test route - DEBE IR PRIMERO para evitar conflictos con :sessionId
 router.get('/test', chatController.test);
 
 // Public routes

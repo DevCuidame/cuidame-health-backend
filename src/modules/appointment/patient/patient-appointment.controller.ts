@@ -184,13 +184,13 @@ export class PatientAppointmentController {
   cancelAppointment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const appointmentId = parseInt(req.params.id);
-      const patientId = req.user?.id;
+      const userId = req.user?.id;
       
       if (isNaN(appointmentId)) {
         throw new BadRequestError('ID de cita inválido');
       }
       
-      if (!patientId) {
+      if (!userId) {
         throw new BadRequestError('Usuario no autenticado');
       }
       
@@ -203,10 +203,11 @@ export class PatientAppointmentController {
       
       const appointment = await this.patientAppointmentService.cancelAppointment(
         appointmentId,
-        patientId,
+        userId,
         reason as CancellationReason,
         reasonDetails
       );
+     
       
       const response: ApiResponse = {
         success: true,

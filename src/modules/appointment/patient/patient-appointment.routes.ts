@@ -8,12 +8,6 @@ const patientAppointmentController = new PatientAppointmentController();
 const router = Router();
 router.use(authMiddleware);
 
-console.log("Cargando rutas de citas del paciente")
-
-router.get('/ping', (req, res) => {
-    res.json({ success: true, message: 'pong' });
-  });
-  
 
 /**
  * @route GET /api/patient/appointments/upcoming
@@ -21,12 +15,6 @@ router.get('/ping', (req, res) => {
  * @access Private
  */
 router.get('/upcoming', patientAppointmentController.getUpcomingAppointments);
-
-/**
- * IMPORTANTE: Agregamos un endpoint raíz que maneje la ruta base
- */
-router.get('/', patientAppointmentController.getAllPatientsAppointments);
-
 
 /**
  * @route GET /api/patient/appointments/all

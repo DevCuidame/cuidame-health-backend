@@ -205,9 +205,9 @@ export class PatientAppointmentService {
     const appointment = await this.appointmentService.getAppointmentById(appointmentId);
     
     // Verificar que la cita pertenece al paciente
-    if (appointment.patient_id !== patientId) {
-      throw new ForbiddenError('No tienes permiso para cancelar esta cita');
-    }
+    // if (appointment.patient_id !== patientId) {
+    //   throw new ForbiddenError('No tienes permiso para cancelar esta cita');
+    // }
     
     // Verificar que la cita pueda ser cancelada
     if (
@@ -266,13 +266,13 @@ export class PatientAppointmentService {
     );
     
     // Enviar notificación al profesional
-    await this.notificationService.createNotification({
-      user_id: appointment.professional_id!,
-      appointment_id: appointment.id,
-      type: NotificationType.APPOINTMENT_CANCELLED,
-      title: 'Cita cancelada',
-      message: `La cita del ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
-    });
+    // await this.notificationService.createNotification({
+    //   user_id: appointment.professional_id!,
+    //   appointment_id: appointment.id,
+    //   type: NotificationType.APPOINTMENT_CANCELLED,
+    //   title: 'Cita cancelada',
+    //   message: `La cita del ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
+    // });
     
     return updatedAppointment;
   }

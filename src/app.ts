@@ -42,38 +42,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 
-
-app.get('/ws/chat', (req: Request, res: Response) => {
-  logger.info('🔍 HTTP GET request to WebSocket endpoint');
-  logger.info('Headers:', req.headers);
-  
-  // Check if it's a WebSocket upgrade request
-  const isWebSocketUpgrade = req.headers.upgrade === 'websocket' && 
-                             req.headers.connection?.toLowerCase().includes('upgrade');
-  
-  if (isWebSocketUpgrade) {
-    logger.warn('⚠️ WebSocket upgrade request received as HTTP - Apache proxy issue');
-  }
-  
-  res.status(426).json({
-    error: 'Upgrade Required',
-    message: 'This endpoint requires WebSocket connection',
-    receivedHeaders: {
-      upgrade: req.headers.upgrade,
-      connection: req.headers.connection,
-      'sec-websocket-key': req.headers['sec-websocket-key'],
-      'sec-websocket-version': req.headers['sec-websocket-version']
-    },
-    instructions: {
-      correct: 'Use WebSocket client to connect to wss://health-api.cuidame.tech/ws/chat',
-      problem: 'Apache is not correctly upgrading WebSocket connections',
-      solution: 'Check Apache proxy configuration for WebSocket upgrade handling'
-    }
-  });
-});
-
-
-
 // Ruta 404 para rutas no encontradas (DEBE IR AL FINAL)
 app.use('*', (req: Request, res: Response) => {
   logger.error(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
@@ -103,7 +71,6 @@ const initializeApp = async (): Promise<void> => {
     // Debug: Mostrar rutas registradas
     app._router.stack.forEach((middleware: any) => {
       if (middleware.route) {
-        logger.info(`📍 Route: ${middleware.route.path}`);
       } else if (middleware.name === 'router') {
         middleware.handle.stack.forEach((handler: any) => {
           if (handler.route) {
