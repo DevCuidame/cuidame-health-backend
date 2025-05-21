@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import config from './environment';
 import { errorMiddleware } from '../../middlewares/error.middleware';
 import path from 'path';
+// src/core/config/express.ts - REMOVER todas las líneas de CORS
 
 export const setupExpress = (existingApp?: Application): Application => {
   const app: Application = existingApp || express();
@@ -13,7 +14,7 @@ export const setupExpress = (existingApp?: Application): Application => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  // Seguridad - Modificar Helmet para permitir imágenes
+  // Seguridad
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -28,26 +29,13 @@ export const setupExpress = (existingApp?: Application): Application => {
     app.use(morgan('combined'));
   }
 
-  // Carpeta estática para archivos subidos
+  // Carpeta estática para archivos subidos - SIN CORS
   app.use('/uploads', express.static('/home/developer/uploads'));
 
-  // Static folder for uploads with CORS headers
-  app.use('/uploads', (req, res, next) => {
-    // res.header('Access-Control-Allow-Origin', '*');
-    // res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-    next();
-  });
-
-  // Carpeta estática para archivos subidos
+  // Carpeta estática - SIN HEADERS CORS
   app.use(
     '/uploads',
-    express.static(path.join(process.cwd(), config.fileUpload.path), {
-      setHeaders: (res) => {
-        // Agregar encabezados adicionales específicos para archivos estáticos
-        // res.set('Access-Control-Allow-Origin', '*');
-        // res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-      },
-    })
+    express.static(path.join(process.cwd(), config.fileUpload.path))
   );
 
   // Ruta de estado
