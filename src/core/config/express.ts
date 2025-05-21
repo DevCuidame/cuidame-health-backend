@@ -33,8 +33,8 @@ export const setupExpress = (existingApp?: Application): Application => {
 
   // Static folder for uploads with CORS headers
   app.use('/uploads', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    // res.header('Access-Control-Allow-Origin', '*');
+    // res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   });
 
@@ -44,8 +44,8 @@ export const setupExpress = (existingApp?: Application): Application => {
     express.static(path.join(process.cwd(), config.fileUpload.path), {
       setHeaders: (res) => {
         // Agregar encabezados adicionales específicos para archivos estáticos
-        res.set('Access-Control-Allow-Origin', '*');
-        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        // res.set('Access-Control-Allow-Origin', '*');
+        // res.set('Cross-Origin-Resource-Policy', 'cross-origin');
       },
     })
   );

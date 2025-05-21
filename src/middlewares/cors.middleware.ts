@@ -23,30 +23,30 @@ export const corsMiddleware = (
     '*'
   ];
 
-  // Get the origin from the request
-  const origin = req.headers.origin;
+  // // Get the origin from the request
+  // const origin = req.headers.origin;
 
-  // Always set CORS headers for API requests
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (config.env === 'development') {
-    // In development, allow any origin
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  } else {
-    // In production, allow the main frontend origin
-    res.setHeader('Access-Control-Allow-Origin', 'https://health.cuidame.tech');
-  }
+  // // Always set CORS headers for API requests
+  // if (origin && allowedOrigins.includes(origin)) {
+  //   res.setHeader('Access-Control-Allow-Origin', origin);
+  // } else if (config.env === 'development') {
+  //   // In development, allow any origin
+  //   res.setHeader('Access-Control-Allow-Origin', '*');
+  // } else {
+  //   // In production, allow the main frontend origin
+  //   res.setHeader('Access-Control-Allow-Origin', 'https://health.cuidame.tech');
+  // }
 
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-  );
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-  );
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  // res.setHeader(
+  //   'Access-Control-Allow-Methods',
+  //   'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+  // );
+  // res.setHeader(
+  //   'Access-Control-Allow-Headers',
+  //   'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+  // );
+  // res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
