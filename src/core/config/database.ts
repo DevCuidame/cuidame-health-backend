@@ -30,7 +30,7 @@ const typeOrmConfig: PostgresConnectionOptions = {
   schema: config.database.schema,
   synchronize: false, // No sincronizar - ya tenemos una base de datos existente
   migrationsRun: false,
-  logging: config.env === 'development' ? ['query', 'error', 'schema'] : false,
+  logging: ['error'],
   
   // Register all entities explicitly
   entities: [

@@ -6,13 +6,10 @@ import config from './core/config/environment';
 import logger from './utils/logger';
 import { corsMiddleware } from './middlewares/cors.middleware';
 
-// Inicializar aplicación Express
 const app = express();
 
-// IMPORTANTE: CORS debe ir PRIMERO
 app.use(corsMiddleware);
 
-// Luego configuraciones básicas de Express
 setupExpress(app);
 
 // Middleware de logging para debug

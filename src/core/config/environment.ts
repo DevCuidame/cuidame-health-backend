@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 interface Config {
   env: string;
+  enableCorsHandling: boolean;
   server: {
     port: number;
     host: string;
@@ -43,6 +44,7 @@ interface Config {
 
 // Configuración por defecto
 const config: Config = {
+  enableCorsHandling: process.env.ENABLE_CORS_HANDLING  === 'true',
   env: process.env.NODE_ENV || 'development',
   server: {
     port: parseInt(process.env.PORT || '3000', 10),

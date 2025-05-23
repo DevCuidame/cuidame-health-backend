@@ -3,6 +3,7 @@ import config from './core/config/environment';
 import logger from './utils/logger';
 import { ChatSocketService } from './modules/chat/websocket/chat-socket.service';
 import http from 'http';
+import { AppointmentSocketService } from './modules/appointment/websocket/appointment-socket.service';
 
 // Establecer puerto
 const PORT = config.server.port;
@@ -13,10 +14,14 @@ const server = http.createServer(app);
 
 // IMPORTANTE: Inicializar WebSocket ANTES de que el servidor comience a escuchar
 let chatSocketService: ChatSocketService;
+let appointmentSocketService: AppointmentSocketService;
 
 try {
   chatSocketService = new ChatSocketService(server);
   logger.info(`✅ WebSocket Chat service initialized`);
+
+  appointmentSocketService = new AppointmentSocketService(server);
+  logger.info('📅 Appointment WebSocket service initialized');
 } catch (error) {
   logger.error(`❌ Error al inicializar el WebSocket: ${error}`);
   process.exit(1);
@@ -24,13 +29,17 @@ try {
 
 // Verificar que el WebSocket Server esté listo
 server.on('upgrade', (request, socket, head) => {
-  logger.info(`🔄 WebSocket upgrade request received for: ${request.url}`);
+  const url = request.url;
+  logger.info(`🔄 WebSocket upgrade request received for: ${url}`);
   
-  if (request.url === '/ws/chat') {
+  if (url === '/ws/chat') {
     logger.info(`✅ WebSocket upgrade approved for /ws/chat`);
-    // El WebSocket Server debe manejar esto automáticamente
+    // El ChatSocketService maneja esto automáticamente
+  } else if (url === '/ws/appointments') {
+    logger.info(`✅ WebSocket upgrade approved for /ws/appointments`);
+    // El AppointmentSocketService maneja esto automáticamente
   } else {
-    logger.warn(`❌ WebSocket upgrade rejected for: ${request.url}`);
+    logger.warn(`❌ WebSocket upgrade rejected for: ${url}`);
     socket.destroy();
   }
 });
@@ -70,6 +79,10 @@ const shutdown = () => {
     logger.info('Servidor HTTP cerrado');
     process.exit(0);
   });
+  if (appointmentSocketService) {
+    appointmentSocketService.closeAllConnections();
+    logger.info('📅 Appointment WebSocket cerrado');
+  }
   
   // Forzar cierre si tarda más de 10 segundos
   setTimeout(() => {
