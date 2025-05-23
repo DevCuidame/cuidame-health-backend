@@ -149,11 +149,11 @@ class PatientAppointmentController {
     cancelAppointment = async (req, res, next) => {
         try {
             const appointmentId = parseInt(req.params.id);
-            const patientId = req.user?.id;
+            const userId = req.user?.id;
             if (isNaN(appointmentId)) {
                 throw new error_handler_1.BadRequestError('ID de cita inválido');
             }
-            if (!patientId) {
+            if (!userId) {
                 throw new error_handler_1.BadRequestError('Usuario no autenticado');
             }
             const { reason, reasonDetails } = req.body;
@@ -161,7 +161,7 @@ class PatientAppointmentController {
             if (!reason || !Object.values(patient_appointment_service_1.CancellationReason).includes(reason)) {
                 throw new error_handler_1.BadRequestError('Motivo de cancelación inválido');
             }
-            const appointment = await this.patientAppointmentService.cancelAppointment(appointmentId, patientId, reason, reasonDetails);
+            const appointment = await this.patientAppointmentService.cancelAppointment(appointmentId, userId, reason, reasonDetails);
             const response = {
                 success: true,
                 message: 'Cita cancelada correctamente',

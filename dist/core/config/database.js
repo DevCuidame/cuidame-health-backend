@@ -27,7 +27,7 @@ const typeOrmConfig = {
     schema: environment_1.default.database.schema,
     synchronize: false, // No sincronizar - ya tenemos una base de datos existente
     migrationsRun: false,
-    logging: environment_1.default.env === 'development' ? ['query', 'error', 'schema'] : false,
+    logging: ['error'],
     // Register all entities explicitly
     entities: [
         // Main entities

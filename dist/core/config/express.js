@@ -16,7 +16,7 @@ const setupExpress = (existingApp) => {
     // Middleware básicos
     app.use(express_1.default.json({ limit: '10mb' }));
     app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-    // Seguridad - Modificar Helmet para permitir imágenes
+    // Seguridad
     app.use((0, helmet_1.default)({
         crossOriginResourcePolicy: { policy: 'cross-origin' },
         contentSecurityPolicy: false,
@@ -28,22 +28,42 @@ const setupExpress = (existingApp) => {
     else {
         app.use((0, morgan_1.default)('combined'));
     }
-    // Carpeta estática para archivos subidos
-    app.use('/uploads', express_1.default.static('/home/developer/uploads'));
-    // Static folder for uploads with CORS headers
-    app.use('/uploads', (req, res, next) => {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
-        next();
-    });
-    // Carpeta estática para archivos subidos
-    app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), environment_1.default.fileUpload.path), {
-        setHeaders: (res) => {
-            // Agregar encabezados adicionales específicos para archivos estáticos
-            res.set('Access-Control-Allow-Origin', '*');
-            res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-        },
-    }));
+    // Configurar carpetas estáticas según configuración
+    if (environment_1.default.enableCorsHandling) {
+        // Si Apache maneja CORS, servir archivos sin headers adicionales
+        // Primero intentar con la ruta absoluta si existe
+        const absoluteUploadPath = '/home/developer/uploads';
+        if (require('fs').existsSync(absoluteUploadPath)) {
+            app.use('/uploads', express_1.default.static(absoluteUploadPath));
+        }
+        // Luego usar la ruta relativa configurada
+        app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), environment_1.default.fileUpload.path)));
+    }
+    else {
+        // Si Node.js maneja CORS, agregar headers a archivos estáticos
+        // Middleware para agregar headers CORS a rutas /uploads
+        app.use('/uploads', (req, res, next) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+            next();
+        });
+        // Servir archivos estáticos con headers CORS
+        const absoluteUploadPath = '/home/developer/uploads';
+        if (require('fs').existsSync(absoluteUploadPath)) {
+            app.use('/uploads', express_1.default.static(absoluteUploadPath, {
+                setHeaders: (res) => {
+                    res.set('Access-Control-Allow-Origin', '*');
+                    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+                },
+            }));
+        }
+        app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), environment_1.default.fileUpload.path), {
+            setHeaders: (res) => {
+                res.set('Access-Control-Allow-Origin', '*');
+                res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+            },
+        }));
+    }
     // Ruta de estado
     app.get('/health', (req, res) => {
         res.status(200).json({

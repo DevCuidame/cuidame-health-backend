@@ -7,20 +7,12 @@ const patient_appointment_controller_1 = require("./patient-appointment.controll
 const patientAppointmentController = new patient_appointment_controller_1.PatientAppointmentController();
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
-console.log("Cargando rutas de citas del paciente");
-router.get('/ping', (req, res) => {
-    res.json({ success: true, message: 'pong' });
-});
 /**
  * @route GET /api/patient/appointments/upcoming
  * @desc Obtener próximas citas del paciente
  * @access Private
  */
 router.get('/upcoming', patientAppointmentController.getUpcomingAppointments);
-/**
- * IMPORTANTE: Agregamos un endpoint raíz que maneje la ruta base
- */
-router.get('/', patientAppointmentController.getAllPatientsAppointments);
 /**
  * @route GET /api/patient/appointments/all
  * @desc Obtener todas las citas del paciente

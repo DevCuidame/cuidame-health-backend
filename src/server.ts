@@ -4,42 +4,40 @@ import logger from './utils/logger';
 import { ChatSocketService } from './modules/chat/websocket/chat-socket.service';
 import http from 'http';
 import { AppointmentSocketService } from './modules/appointment/websocket/appointment-socket.service';
-
+// import expressWs from 'express-ws';
 // Establecer puerto
 const PORT = config.server.port;
 const HOST = config.server.host;
 
 // Crear servidor HTTP
 const server = http.createServer(app);
+// expressWs(app, server);
 
-// IMPORTANTE: Inicializar WebSocket ANTES de que el servidor comience a escuchar
+
 let chatSocketService: ChatSocketService;
 let appointmentSocketService: AppointmentSocketService;
 
 try {
   chatSocketService = new ChatSocketService(server);
-  logger.info(`✅ WebSocket Chat service initialized`);
-
   appointmentSocketService = new AppointmentSocketService(server);
-  logger.info('📅 Appointment WebSocket service initialized');
+  logger.info('All WebSocket services initialized');
 } catch (error) {
-  logger.error(`❌ Error al inicializar el WebSocket: ${error}`);
+  logger.error(`WebSocket init error: ${error}`);
   process.exit(1);
 }
 
-// Verificar que el WebSocket Server esté listo
 server.on('upgrade', (request, socket, head) => {
-  const url = request.url;
-  logger.info(`🔄 WebSocket upgrade request received for: ${url}`);
-  
-  if (url === '/ws/chat') {
-    logger.info(`✅ WebSocket upgrade approved for /ws/chat`);
-    // El ChatSocketService maneja esto automáticamente
-  } else if (url === '/ws/appointments') {
-    logger.info(`✅ WebSocket upgrade approved for /ws/appointments`);
-    // El AppointmentSocketService maneja esto automáticamente
+  logger.debug(`🔄 Upgrade request for: ${request.url}`);
+  // Dejar que los WebSocket.Server manejen la conexión
+  if (request.url === '/ws/chat') {
+    chatSocketService.getServer().handleUpgrade(request, socket, head, (ws) => {
+      chatSocketService.getServer().emit('connection', ws, request);
+    });
+  } else if (request.url === '/ws/appointments') {
+    appointmentSocketService.getServer().handleUpgrade(request, socket, head, (ws) => {
+      appointmentSocketService.getServer().emit('connection', ws, request);
+    });
   } else {
-    logger.warn(`❌ WebSocket upgrade rejected for: ${url}`);
     socket.destroy();
   }
 });
@@ -47,7 +45,9 @@ server.on('upgrade', (request, socket, head) => {
 // Iniciar servidor
 server.listen(PORT, () => {
   logger.info(`🚀 Servidor ejecutándose en http://${HOST}:${PORT}`);
-  logger.info(`📚 API disponible en http://${HOST}:${PORT}${config.server.apiPrefix}`);
+  logger.info(
+    `📚 API disponible en http://${HOST}:${PORT}${config.server.apiPrefix}`
+  );
   logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
   logger.info(`🌍 Entorno: ${config.env}`);
 });
@@ -79,11 +79,7 @@ const shutdown = () => {
     logger.info('Servidor HTTP cerrado');
     process.exit(0);
   });
-  if (appointmentSocketService) {
-    appointmentSocketService.closeAllConnections();
-    logger.info('📅 Appointment WebSocket cerrado');
-  }
-  
+
   // Forzar cierre si tarda más de 10 segundos
   setTimeout(() => {
     logger.error('Cierre forzado después del tiempo de espera');

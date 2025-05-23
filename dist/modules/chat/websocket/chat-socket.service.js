@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatSocketService = void 0;
 // src/modules/chat/websocket/chat-socket.service.ts
 const ws_1 = __importDefault(require("ws"));
+const url_1 = __importDefault(require("url"));
 const uuid_1 = require("uuid");
 const chat_bot_service_1 = require("../chat-bot.service");
 const chat_message_repository_1 = require("../chat-message.repository");
@@ -18,16 +19,32 @@ class ChatSocketService {
     chatMessageRepository;
     clients;
     constructor(server) {
-        // More specific WebSocket server configuration
         this.wss = new ws_1.default.Server({
             server,
             path: '/ws/chat',
-            perMessageDeflate: false,
-            maxPayload: 1024 * 1024, // 1MB
-            handleProtocols: (protocols, request) => {
-                logger_1.default.info('WebSocket protocols requested:', protocols);
-                return protocols[0] || 'echo-protocol';
-            }
+            perMessageDeflate: {
+                zlibDeflateOptions: {
+                    chunkSize: 1024,
+                    memLevel: 7,
+                    level: 3,
+                },
+                zlibInflateOptions: {
+                    chunkSize: 10 * 1024,
+                },
+                // Other options
+                clientNoContextTakeover: true,
+                serverNoContextTakeover: true,
+                serverMaxWindowBits: 10,
+                threshold: 1024, // Size (in bytes) below which messages should not be compressed
+            },
+            maxPayload: 1024 * 1024,
+            clientTracking: true,
+            verifyClient: (info, callback) => {
+                const pathname = url_1.default.parse(info.req.url || '').pathname;
+                const isValid = pathname === '/ws/chat';
+                logger_1.default.info(`Connection ${isValid ? 'approved' : 'rejected'} for ${pathname}`);
+                callback(isValid);
+            },
         });
         this.chatBotService = new chat_bot_service_1.ChatBotService();
         this.chatSessionRepository = new chat_session_repository_1.ChatSessionRepository();
@@ -49,7 +66,7 @@ class ChatSocketService {
             ws.send(JSON.stringify({
                 type: 'connection',
                 clientId,
-                message: 'Conectado al servidor de chat'
+                message: 'Conectado al servidor de chat',
             }));
             // Handle messages
             ws.on('message', async (message) => {
@@ -62,7 +79,7 @@ class ChatSocketService {
                         logger_1.default.error(`Invalid JSON received: ${message}`);
                         ws.send(JSON.stringify({
                             type: 'error',
-                            message: 'Formato de mensaje inválido'
+                            message: 'Formato de mensaje inválido',
                         }));
                         return;
                     }
@@ -81,7 +98,7 @@ class ChatSocketService {
                             logger_1.default.warn(`Unknown message type: ${data.type}`);
                             ws.send(JSON.stringify({
                                 type: 'error',
-                                message: 'Tipo de mensaje no reconocido'
+                                message: 'Tipo de mensaje no reconocido',
                             }));
                     }
                 }
@@ -89,7 +106,7 @@ class ChatSocketService {
                     logger_1.default.error(`Error handling WebSocket message from ${clientId}:`, error);
                     ws.send(JSON.stringify({
                         type: 'error',
-                        message: 'Error interno al procesar el mensaje'
+                        message: 'Error interno al procesar el mensaje',
                     }));
                 }
             });
@@ -108,8 +125,8 @@ class ChatSocketService {
                 this.clients.delete(clientId);
             });
         });
-        this.wss.on('error', (error) => {
-            logger_1.default.error(`WebSocket Server Error:`, error);
+        this.wss.on('headers', (headers, request) => {
+            logger_1.default.debug('WebSocket Headers:', headers);
         });
         // Set up ping interval to keep connections alive
         setInterval(() => {
@@ -148,8 +165,8 @@ class ChatSocketService {
                         content: m.message_content,
                         sender: m.direction === 'outgoing' ? 'bot' : 'user',
                         timestamp: m.created_at,
-                        sessionId: m.session_id
-                    }))
+                        sessionId: m.session_id,
+                    })),
                 }));
             }
             else {
@@ -159,11 +176,13 @@ class ChatSocketService {
                 ws.send(JSON.stringify({
                     type: 'init',
                     sessionId: session.session_id,
-                    messages: [{
+                    messages: [
+                        {
                             content: '👋 ¡Hola, me llamo Eli! ¡Bienvenido al sistema de agendamiento de citas médicas! Por favor, ingresa tu número de documento (cédula) para continuar:',
                             sender: 'bot',
-                            timestamp: new Date()
-                        }]
+                            timestamp: new Date(),
+                        },
+                    ],
                 }));
             }
             logger_1.default.info(`Session initialized for client ${clientId}: ${session.session_id}`);
@@ -172,7 +191,7 @@ class ChatSocketService {
             logger_1.default.error(`Error initializing session for client ${clientId}:`, error);
             ws.send(JSON.stringify({
                 type: 'error',
-                message: 'Error al inicializar la sesión'
+                message: 'Error al inicializar la sesión',
             }));
         }
     }
@@ -183,7 +202,7 @@ class ChatSocketService {
         if (!data.sessionId || !data.message) {
             ws.send(JSON.stringify({
                 type: 'error',
-                message: 'Session ID y mensaje son requeridos'
+                message: 'Session ID y mensaje son requeridos',
             }));
             return;
         }
@@ -203,13 +222,13 @@ class ChatSocketService {
                     .map((m) => ({
                     content: m.message_content,
                     sender: 'bot',
-                    timestamp: m.created_at
+                    timestamp: m.created_at,
                 }));
                 // Send bot responses to client
                 if (newMessages.length > 0) {
                     ws.send(JSON.stringify({
                         type: 'message',
-                        messages: newMessages
+                        messages: newMessages,
                     }));
                     logger_1.default.info(`Sent ${newMessages.length} bot responses to client ${clientId}`);
                 }
@@ -219,7 +238,7 @@ class ChatSocketService {
             logger_1.default.error(`Error processing chat message from ${clientId}:`, error);
             ws.send(JSON.stringify({
                 type: 'error',
-                message: 'Error al procesar el mensaje'
+                message: 'Error al procesar el mensaje',
             }));
         }
     }

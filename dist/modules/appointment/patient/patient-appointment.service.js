@@ -162,9 +162,9 @@ class PatientAppointmentService {
         // Verificar que la cita existe
         const appointment = await this.appointmentService.getAppointmentById(appointmentId);
         // Verificar que la cita pertenece al paciente
-        if (appointment.patient_id !== patientId) {
-            throw new error_handler_1.ForbiddenError('No tienes permiso para cancelar esta cita');
-        }
+        // if (appointment.patient_id !== patientId) {
+        //   throw new ForbiddenError('No tienes permiso para cancelar esta cita');
+        // }
         // Verificar que la cita pueda ser cancelada
         if (appointment.status === appointment_model_1.AppointmentStatus.COMPLETED ||
             appointment.status === appointment_model_1.AppointmentStatus.CANCELLED ||
@@ -209,13 +209,13 @@ class PatientAppointmentService {
         const updatedAppointment = await this.appointmentService.changeAppointmentStatus(appointmentId, appointment_model_1.AppointmentStatus.CANCELLED, cancellationMessage, patientId // Usando patientId como modified_by_id
         );
         // Enviar notificación al profesional
-        await this.notificationService.createNotification({
-            user_id: appointment.professional_id,
-            appointment_id: appointment.id,
-            type: notification_model_1.NotificationType.APPOINTMENT_CANCELLED,
-            title: 'Cita cancelada',
-            message: `La cita del ${appointment.start_time.toLocaleDateString()} a las ${appointment.start_time.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
-        });
+        // await this.notificationService.createNotification({
+        //   user_id: appointment.professional_id!,
+        //   appointment_id: appointment.id,
+        //   type: NotificationType.APPOINTMENT_CANCELLED,
+        //   title: 'Cita cancelada',
+        //   message: `La cita del ${appointment.start_time!.toLocaleDateString()} a las ${appointment.start_time!.toLocaleTimeString()} ha sido cancelada por el paciente. Motivo: ${cancellationMessage}`
+        // });
         return updatedAppointment;
     }
     /**

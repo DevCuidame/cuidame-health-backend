@@ -10,12 +10,16 @@ const routes_1 = __importDefault(require("./routes"));
 const environment_1 = __importDefault(require("./core/config/environment"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const cors_middleware_1 = require("./middlewares/cors.middleware");
-// Inicializar aplicación Express
 const app = (0, express_1.default)();
-// IMPORTANTE: CORS debe ir PRIMERO
 app.use(cors_middleware_1.corsMiddleware);
-// Luego configuraciones básicas de Express
 (0, express_2.setupExpress)(app);
+app.use((req, res, next) => {
+    if (req.url?.startsWith('/ws/')) {
+        req.wsHandled = true;
+        return next('router');
+    }
+    next();
+});
 // Middleware de logging para debug
 app.use((req, res, next) => {
     logger_1.default.info(`📥 ${req.method} ${req.url}`);
@@ -65,7 +69,6 @@ const initializeApp = async () => {
         // Debug: Mostrar rutas registradas
         app._router.stack.forEach((middleware) => {
             if (middleware.route) {
-                logger_1.default.info(`📍 Route: ${middleware.route.path}`);
             }
             else if (middleware.name === 'router') {
                 middleware.handle.stack.forEach((handler) => {

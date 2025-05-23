@@ -9,6 +9,7 @@ const path_1 = __importDefault(require("path"));
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../../.env') });
 // Configuración por defecto
 const config = {
+    enableCorsHandling: process.env.ENABLE_CORS_HANDLING === 'true',
     env: process.env.NODE_ENV || 'development',
     server: {
         port: parseInt(process.env.PORT || '3000', 10),

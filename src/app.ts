@@ -12,6 +12,7 @@ app.use(corsMiddleware);
 
 setupExpress(app);
 
+
 // Middleware de logging para debug
 app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`📥 ${req.method} ${req.url}`);
