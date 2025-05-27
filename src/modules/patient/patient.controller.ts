@@ -137,6 +137,35 @@ getPatientWithHealthData = async (req: Request, res: Response, next: NextFunctio
   };
 
   /**
+   * Obtener paciente by identification type and number
+   * @route GET /api/patients/identification/identificationType/identificationNumber
+   */
+  getPatientByIdAndNum = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      const identificationType = req.params.identificationType;
+      const identificationNumber = req.params.identificationNumber;
+      
+      if (!userId) {
+        throw new BadRequestError('Usuario no autenticado');
+      }
+      
+      const patient = await this.patientService.getPatientByIdAndNum(identificationType, identificationNumber);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: patient,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+
+  /**
    * Buscar pacientes
    * @route GET /api/patients/search
    */

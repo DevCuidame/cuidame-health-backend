@@ -14,13 +14,13 @@ export class AppointmentType {
   description?: string;
 
   @Column({ default: 30 })
-  default_duration!: number; // en minutos
+  default_duration!: number; 
 
   @Column({ default: true })
   is_active!: boolean;
 
   @Column({ nullable: true })
-  color_code?: string; // Para representación visual
+  color_code?: string;
 
   @CreateDateColumn()
   created_at!: Date;

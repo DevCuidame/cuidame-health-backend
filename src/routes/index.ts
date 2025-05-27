@@ -29,6 +29,7 @@ import chatRoutes from '../modules/chat/chat.routes';
 
 import recurringAppointmentRoutes from '../modules/appointment/routes/recurring-appointment.routes';
 import questionnaireRoutes from '../modules/appointment/routes/questionnaire.routes';
+import medicalSpecialtiesRoutes from '../modules/medical-specialty/medical-specialty.routes';
 
 import {
   notificationRoutes,
@@ -49,6 +50,7 @@ router.use('/health-data', healthDataRoutes);
 router.use('/code', codeRoutes);
 router.use('/contacts', contactRoutes);
 router.use('/patient/appointments', patientAppointmentRoutes);
+router.use('/specialties', medicalSpecialtiesRoutes)
 
 router.use('/chat', chatRoutes);
 router.use('/professionals', healthProfessionalRoutes);

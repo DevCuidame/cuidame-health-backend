@@ -13,21 +13,12 @@ export class AppointmentSocketService {
 
   constructor(server: http.Server) {
     this.wss = new WebSocket.Server({
-      server,
-      path: '/ws/appointments',
-      
-      perMessageDeflate: false,
-      maxPayload: 1024 * 1024,
-      clientTracking: true,
-      verifyClient: (info, callback) => {
-        const pathname = url.parse(info.req.url || '').pathname;
-        const isValid = pathname === '/ws/appointments';
-        logger.info(
-          `Connection ${isValid ? 'approved' : 'rejected'} for ${pathname}`
-        );
-        callback(isValid);
-      },
-    });
+        noServer: true,  // Cambia server por noServer: true
+        path: '/ws/appointments',
+        perMessageDeflate: false,
+        maxPayload: 1024 * 1024,
+        clientTracking: true,
+      });
 
     this.appointmentService = new AppointmentService();
     this.clients = new Map();

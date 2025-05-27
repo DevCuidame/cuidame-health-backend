@@ -864,5 +864,51 @@ COMMENT ON FUNCTION clean_old_notifications() IS 'Función de mantenimiento para
 COMMENT ON VIEW notification_delivery_stats IS 'Vista para estadísticas de entrega de notificaciones';
 
 
+-- UPDATE 23 - 05 - 2025
+
 -- Actualizar el tipo enum en PostgreSQL
 ALTER TYPE chat_step_type ADD VALUE 'selectAppointmentType' AFTER 'selectSpecialty';
+
+CREATE TABLE medical_specialties (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insertar especialidades médicas
+INSERT INTO medical_specialties (name) VALUES
+('Medicina General'),
+('Acompañamiento de Citas Médicas'),
+('Cuidador'),
+('Recoger Medicamentos');
+
+-- Alterar la tabla appointment para agregar specialty_id
+ALTER TABLE appointments
+ADD COLUMN specialty_id INT;
+
+-- Agregar la clave foránea a specialty_id
+ALTER TABLE appointments
+ADD CONSTRAINT fk_appointment_specialty
+FOREIGN KEY (specialty_id) REFERENCES medical_specialties(id);
+
+-- Agregar columna de ubicación
+ALTER TABLE appointments
+ADD COLUMN location VARCHAR(255);
+
+
+INSERT INTO appointment_types (name, description, default_duration, color_code, is_active) VALUES 
+('Consulta de Primera Vez', 'Primera consulta con un especialista para evaluación inicial', 45, '#007bff', true),
+('Control Médico', 'Cita de seguimiento para revisar evolución del tratamiento', 30, '#28a745', true),
+('Consulta Urgente', 'Consulta para casos que requieren atención prioritaria', 20, '#dc3545', true),
+('Toma de Muestras', 'Extracción de sangre u otras muestras para análisis', 15, '#ffc107', true),
+('Electrocardiograma', 'Estudio de la actividad eléctrica del corazón', 20, '#e91e63', true),
+('Consulta Cardiológica', 'Evaluación y seguimiento de problemas cardiovasculares', 40, '#ff6b6b', true),
+('Consulta Pediátrica', 'Atención médica especializada para niños y adolescentes', 35, '#4ecdc4', true),
+('Consulta Ginecológica', 'Atención en salud reproductiva femenina', 30, '#ff9ff3', true),
+('Ecografía', 'Estudio por imágenes utilizando ultrasonido', 30, '#74b9ff', true),
+('Endoscopia', 'Examen visual interno utilizando endoscopio', 60, '#a29bfe', true),
+('Teleconsulta', 'Consulta médica a través de videoconferencia', 25, '#00b894', true),
+('Cirugía Menor', 'Procedimientos quirúrgicos ambulatorios de baja complejidad', 90, '#fd79a8', true),
+('Fisioterapia', 'Sesión de rehabilitación física y motora', 45, '#fdcb6e', true),
+('Chequeo Ejecutivo', 'Evaluación médica integral preventiva', 120, '#6c5ce7', true);

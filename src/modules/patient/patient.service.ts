@@ -301,6 +301,77 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
 }
 
   /**
+   * Obtener pacientes por cuidador
+   * @param caregiverId ID del cuidador
+   * @returns Lista de pacientes a cargo del cuidador
+   */
+  async getPatientByIdAndNum( identificationType: string, identificationNumber: string): Promise<Patient[]> {
+    // Obtener pacientes a cargo del usuario
+    let patient = await this.patientRepository.findByIdAndNum(identificationType, identificationNumber);
+  
+    // Añadir datos de salud y localización para cada paciente a cargo
+    if (patient && patient.length > 0) {
+      const enrichedPatients = await Promise.all(
+        patient.map(async (patient) => {
+          // Remove imagebs64 from patient object to reduce size
+          const { ...patientWithoutImage } = patient;
+          
+          // Obtener datos de salud para el paciente
+          const [
+            latestVitals,
+            medicalInfo
+          ] = await Promise.all([
+            this.healthRepository.getLatestVitals(patient.id),
+            this.medicalInfoRepository.getAllMedicalInfo(patient.id)
+          ]);
+  
+          // Obtener información detallada de ciudad y departamento
+          let cityName = patient.ciudad || "";
+          let departmentName = patient.departamento || "";
+  
+          // Si hay city_id, intentar obtener el nombre real de la ciudad y departamento
+          if (patient.city_id) {
+            try {
+              // Obtener datos de la ciudad desde el repositorio de ubicaciones
+              const locationRepository = AppDataSource.getRepository('townships');
+              const cityData = await locationRepository.findOne({
+                where: { id: patient.city_id },
+                relations: ['department']
+              });
+  
+              if (cityData) {
+                cityName = cityData.name;
+                if (cityData.department) {
+                  departmentName = cityData.department.name;
+                }
+              }
+            } catch (error) {
+              console.error('Error al obtener información de localización:', error);
+              // Mantener los valores originales en caso de error
+            }
+          }
+  
+          // Crear un objeto que combine el paciente con sus datos de salud y localización
+          return {
+            ...patientWithoutImage,
+            ciudad: cityName,
+            department_name: departmentName,
+            health_data: {
+              vitals: latestVitals,
+              medical_info: medicalInfo
+            }
+          };
+        })
+      );
+  
+      // Reemplazar la lista original con la enriquecida
+      patient = enrichedPatients;
+    }
+  
+    return patient;
+  }
+
+  /**
    * Buscar pacientes por criterios
    * @param search Texto de búsqueda
    * @param caregiverId ID del cuidador (opcional)

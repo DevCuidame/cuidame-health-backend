@@ -38,6 +38,7 @@ export class AppointmentService {
         'professional',
         'professional.user',
         'appointmentType',
+        'specialty'
       ],
     });
   }

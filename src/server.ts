@@ -27,17 +27,20 @@ try {
 }
 
 server.on('upgrade', (request, socket, head) => {
-  logger.debug(`🔄 Upgrade request for: ${request.url}`);
-  // Dejar que los WebSocket.Server manejen la conexión
-  if (request.url === '/ws/chat') {
+  const pathname = request.url || '';
+  logger.debug(`🔄 Upgrade request for: ${pathname}`);
+  
+  if (pathname === '/ws/chat') {
     chatSocketService.getServer().handleUpgrade(request, socket, head, (ws) => {
       chatSocketService.getServer().emit('connection', ws, request);
     });
-  } else if (request.url === '/ws/appointments') {
+  } else if (pathname === '/ws/appointments') {
     appointmentSocketService.getServer().handleUpgrade(request, socket, head, (ws) => {
       appointmentSocketService.getServer().emit('connection', ws, request);
     });
   } else {
+    logger.warn(`❌ Unknown WebSocket path: ${pathname}`);
+    socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
     socket.destroy();
   }
 });

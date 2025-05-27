@@ -17,19 +17,11 @@ export class ChatSocketService {
 
   constructor(server: http.Server) {
     this.wss = new WebSocket.Server({
-      server,
+      noServer: true, 
       path: '/ws/chat',
-      perMessageDeflate:false,
+      perMessageDeflate: false,
       maxPayload: 1024 * 1024,
       clientTracking: true,
-      verifyClient: (info, callback) => {
-        const pathname = url.parse(info.req.url || '').pathname;
-        const isValid = pathname === '/ws/chat';
-        logger.info(
-          `Connection ${isValid ? 'approved' : 'rejected'} for ${pathname}`
-        );
-        callback(isValid);
-      },
     });
 
     this.chatBotService = new ChatBotService();

@@ -5,8 +5,10 @@ import { AvailabilityService } from './availability.service';
 import { BadRequestError } from '../../../utils/error-handler';
 import { AppointmentStatus } from '../../../models/appointment.model';
 import { NotificationType } from '../../../models/notification.model';
+import { MedicalSpecialtyService } from '../../../modules/medical-specialty/medical-specialty.service';
 
 export class AppointmentRequestService {
+  private medicalSpecialtyService: MedicalSpecialtyService
   private appointmentService: AppointmentService;
   private availabilityService: AvailabilityService;
   private notificationService: NotificationService;
@@ -15,6 +17,7 @@ export class AppointmentRequestService {
     this.appointmentService = new AppointmentService();
     this.availabilityService = new AvailabilityService();
     this.notificationService = new NotificationService();
+    this.medicalSpecialtyService = new MedicalSpecialtyService();
   }
 
   /**
@@ -27,6 +30,8 @@ export class AppointmentRequestService {
     date: string;
     time: string;
     notes?: string;
+    city: string;
+    specialty: string;
   }, userId: number) {
     // 1. Validar la entrada de datos
     if (!data.patient_id || !data.date || !data.time) {
@@ -61,6 +66,10 @@ export class AppointmentRequestService {
     // if (!isAvailable) {
     //   throw new BadRequestError('El horario seleccionado no está disponible');
     // }
+
+    // Obtener especialidad
+
+    const specialty = await this.medicalSpecialtyService.getSpecialtyByName(data.specialty);
     
     // 6. Crear la cita con estado "Solicitada"
     const appointment = await this.appointmentService.createAppointment({
@@ -69,6 +78,8 @@ export class AppointmentRequestService {
       end_time: endTime,
       status: AppointmentStatus.REQUESTED,
       notes: data.notes,
+      location: data.city,
+      specialty_id: specialty?.id ?? undefined,
       modified_by_id: userId
     });
     

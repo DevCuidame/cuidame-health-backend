@@ -1,9 +1,10 @@
 // src/models/appointment.model.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { Patient } from './patient.model';
 import { HealthProfessional } from './health-professional.model';
 import { AppointmentType } from './appointment-type.model';
 import { RecurringAppointment } from './recurring-appointment.model';
+import { MedicalSpecialties } from './medical-specialties.model';
 
 export enum AppointmentStatus {
   REQUESTED = 'requested',
@@ -51,18 +52,29 @@ export class Appointment {
   reminder_sent?: boolean;
 
   @Column({ nullable: true })
-  modified_by_id?: number; // ID del usuario que modificó la cita por última vez
+  specialty_id?: number; 
 
   @Column({ nullable: true })
-  recurring_appointment_id?: number; // ID de la cita recurrente a la que pertenece
+  location?: string; 
+
+  @Column({ nullable: true })
+  modified_by_id?: number; 
+
+  @Column({ nullable: true })
+  recurring_appointment_id?: number;
 
   @CreateDateColumn()
   created_at?: Date;
 
   @UpdateDateColumn()
   updated_at?: Date;
+  
 
   // Relaciones
+  @OneToOne(() => MedicalSpecialties)
+  @JoinColumn({ name: 'specialty_id' })
+  specialty!: MedicalSpecialties;
+  
   @ManyToOne(() => Patient)
   @JoinColumn({ name: 'patient_id' })
   patient!: Patient;

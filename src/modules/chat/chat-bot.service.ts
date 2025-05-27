@@ -19,7 +19,7 @@ import { AppointmentStatus } from '../../models/appointment.model';
 import { EmailService } from '../../modules/notification/services/email.service';
 import { NotificationService } from '../../modules/notification/notification.service';
 import { UserRepository } from '../../modules/user/user.repository';
-
+import { MedicalSpecialtyService } from '../../modules/medical-specialty/medical-specialty.service';
 
 export class ChatBotService {
   private chatSessionRepository: ChatSessionRepository;
@@ -30,7 +30,7 @@ export class ChatBotService {
   private appointmentRequestService: AppointmentRequestService;
   private availabilityService: AvailabilityService;
   private userRepository: UserRepository;
-
+  private medicalSpecialtyService: MedicalSpecialtyService;
 
   constructor() {
     this.chatSessionRepository = new ChatSessionRepository();
@@ -41,6 +41,7 @@ export class ChatBotService {
     this.appointmentRequestService = new AppointmentRequestService();
     this.availabilityService = new AvailabilityService();
     this.userRepository = new UserRepository();
+    this.medicalSpecialtyService = new MedicalSpecialtyService();
   }
 
   /**
@@ -101,21 +102,21 @@ export class ChatBotService {
     if (!session || session.status !== ChatSessionStatus.ACTIVE) {
       throw new BadRequestError('Sesión no válida o inactiva');
     }
-  
+
     // Record incoming message
     await this.chatMessageRepository.create({
       session_id: sessionId,
       direction: MessageDirection.INCOMING,
       message_content: message,
     });
-  
+
     // Update last interaction time
     await this.chatSessionRepository.update(
       session.id,
       { last_interaction_at: new Date() },
       'ChatSession'
     );
-  
+
     // Process based on current step
     try {
       switch (session.current_step) {
@@ -309,7 +310,7 @@ export class ChatBotService {
   ): Promise<void> {
     const chatData = session.chat_data || {};
     const city = chatData.selectedCity;
-  
+
     if (!city) {
       // Something went wrong, go back to city selection
       await this.chatSessionRepository.update(
@@ -317,12 +318,12 @@ export class ChatBotService {
         { current_step: ChatStepType.SELECT_CITY },
         'ChatSession'
       );
-  
+
       await this.sendBotMessage(
         session.session_id,
         'Hubo un problema con la selección de ciudad. Por favor, selecciona nuevamente la ciudad:'
       );
-  
+
       const cities = await this.getAvailableCities();
       const cityMessage = cities
         .map((city, index) => `${index + 1}. ${city}`)
@@ -330,10 +331,10 @@ export class ChatBotService {
       await this.sendBotMessage(session.session_id, cityMessage);
       return;
     }
-  
+
     const specialties = await this.getAvailableSpecialties(city);
     const cleanMessage = message.trim().toLowerCase();
-  
+
     // Check if user entered a number
     let selectedSpecialty: string | null = null;
     if (/^\d+$/.test(cleanMessage)) {
@@ -350,24 +351,24 @@ export class ChatBotService {
             specialty.toLowerCase().includes(cleanMessage)
         ) || null;
     }
-  
+
     if (!selectedSpecialty) {
       // Send error and list specialties again
       await this.sendBotMessage(
         session.session_id,
         'No hemos reconocido esa especialidad. Por favor, selecciona una de las siguientes opciones:'
       );
-  
+
       const specialtyMessage = specialties
         .map((specialty, index) => `${index + 1}. ${specialty}`)
         .join('\n');
       await this.sendBotMessage(session.session_id, specialtyMessage);
       return;
     }
-  
+
     // Update session with selected specialty
     chatData.selectedSpecialty = selectedSpecialty;
-  
+
     // Si la especialidad es "Medicina General", preguntar por el tipo de cita
     if (selectedSpecialty.toLowerCase() === 'medicina general') {
       await this.chatSessionRepository.update(
@@ -378,7 +379,7 @@ export class ChatBotService {
         },
         'ChatSession'
       );
-  
+
       // Enviar mensaje para seleccionar tipo de cita
       await this.sendBotMessage(
         session.session_id,
@@ -399,7 +400,7 @@ export class ChatBotService {
         },
         'ChatSession'
       );
-  
+
       // Enviar mensaje de confirmación con los datos seleccionados
       const confirmationMessage = `Por favor, confirma los datos de tu solicitud de cita:
         
@@ -411,11 +412,10 @@ export class ChatBotService {
   Nota: Un operador te asignará el profesional, fecha y hora según disponibilidad.
     
   ¿Deseas confirmar esta solicitud de cita? (Responde SI para confirmar o NO para cancelar)`;
-  
+
       await this.sendBotMessage(session.session_id, confirmationMessage);
     }
   }
-
 
   private async processAppointmentTypeSelection(
     session: ChatSession,
@@ -423,16 +423,24 @@ export class ChatBotService {
   ): Promise<void> {
     const chatData = session.chat_data || {};
     const cleanMessage = message.trim().toLowerCase();
-  
+
     // Verificar la respuesta del usuario
     let appointmentType: string | null = null;
-    
-    if (cleanMessage === '1' || cleanMessage === 'virtual' || cleanMessage === 'v') {
+
+    if (
+      cleanMessage === '1' ||
+      cleanMessage === 'virtual' ||
+      cleanMessage === 'v'
+    ) {
       appointmentType = 'Virtual';
-    } else if (cleanMessage === '2' || cleanMessage === 'presencial' || cleanMessage === 'p') {
+    } else if (
+      cleanMessage === '2' ||
+      cleanMessage === 'presencial' ||
+      cleanMessage === 'p'
+    ) {
       appointmentType = 'Presencial';
     }
-  
+
     if (!appointmentType) {
       // Respuesta no válida, pedir de nuevo
       await this.sendBotMessage(
@@ -441,10 +449,10 @@ export class ChatBotService {
       );
       return;
     }
-  
+
     // Guardar el tipo de cita seleccionado
     chatData.appointmentType = appointmentType;
-    
+
     await this.chatSessionRepository.update(
       session.id,
       {
@@ -453,7 +461,7 @@ export class ChatBotService {
       },
       'ChatSession'
     );
-  
+
     // Enviar mensaje de confirmación con los datos seleccionados
     const confirmationMessage = `Por favor, confirma los datos de tu solicitud de cita:
       
@@ -466,7 +474,7 @@ export class ChatBotService {
   Nota: Un operador te asignará el profesional, fecha y hora según disponibilidad.
     
   ¿Deseas confirmar esta solicitud de cita? (Responde SI para confirmar o NO para cancelar)`;
-  
+
     await this.sendBotMessage(session.session_id, confirmationMessage);
   }
 
@@ -861,10 +869,10 @@ export class ChatBotService {
     message: string
   ): Promise<void> {
     const cleanMessage = message.trim().toLowerCase();
-  
+
     const UNASSIGNED_DATE = new Date();
     UNASSIGNED_DATE.setFullYear(UNASSIGNED_DATE.getFullYear() + 100);
-  
+
     if (
       cleanMessage === 'si' ||
       cleanMessage === 'sí' ||
@@ -879,10 +887,9 @@ export class ChatBotService {
         const patient = await this.patientRepository.findOneByOptions({
           where: { id: session.patient_id },
         });
-      console.log("🚀 ~ ChatBotService ~ patient:", patient)
 
-      const userId = patient?.a_cargo_id;
-      const user = userId ? await this.userRepository.findById(userId) : null;
+        const userId = patient?.a_cargo_id;
+        const user = userId ? await this.userRepository.findById(userId) : null;
 
         const appointmentData = {
           patient_id: session.patient_id,
@@ -897,45 +904,54 @@ export class ChatBotService {
         try {
           // Opción 1: Usando directamente el EmailService
           const emailService = EmailService.getInstance();
-          
+
           // Preparar los datos del correo
           const emailData = {
-            to: "contacto.eli@cuidame.tech", 
-            subject: "Nueva solicitud de cita registrada",
+            to: 'contacto.eli@cuidame.tech',
+            subject: 'Nueva solicitud de cita registrada',
             html: `
               <h2>Nueva solicitud de cita</h2>
               <p><strong>Paciente:</strong> ${chatData.patientName}</p>
               <p><strong>Documento:</strong> ${session.document_number}</p>
               <p><strong>Ciudad:</strong> ${chatData.selectedCity}</p>
-              <p><strong>Número del Titular:</strong> ${user?.phone || 'No disponible'}</p>
-              <p><strong>Correo del Titular:</strong> ${user?.email || 'No disponible'}</p>
-              <p><strong>Especialidad:</strong> ${chatData.selectedSpecialty}</p>
+              <p><strong>Número del Titular:</strong> ${
+                user?.phone || 'No disponible'
+              }</p>
+              <p><strong>Correo del Titular:</strong> ${
+                user?.email || 'No disponible'
+              }</p>
+              <p><strong>Especialidad:</strong> ${
+                chatData.selectedSpecialty
+              }</p>
               <p><strong>Fecha de solicitud:</strong> ${new Date().toLocaleString()}</p>
               <p>Esta cita requiere asignación de profesional, fecha y hora.</p>
-            `
+            `,
           };
-          
+
           // Enviar el correo
           const result = await emailService.sendEmail(emailData);
-          
-          if (result.success) {
-            logger.info(`Email sent successfully for appointment ID: ${appointmentData}`);
-          } else {
-            logger.error(`Error sending email for appointment: ${result.error}`);
-          }
 
+          if (result.success) {
+            logger.info(
+              `Email sent successfully for appointment ID: ${appointmentData}`
+            );
+          } else {
+            logger.error(
+              `Error sending email for appointment: ${result.error}`
+            );
+          }
         } catch (error) {
           logger.error(`Error al enviar notificación de la cita:`, error);
           // No lanzamos el error para que no afecte al flujo principal
         }
-  
+
         // Create appointment request
         const appointment =
           await this.appointmentRequestService.requestAppointment(
             appointmentData,
             userId!
           );
-  
+
         // Update session with appointment id and mark as completed
         await this.chatSessionRepository.update(
           session.id,
@@ -946,13 +962,13 @@ export class ChatBotService {
           },
           'ChatSession'
         );
-  
+
         // Preparar mensaje de confirmación con o sin tipo de cita
         let appointmentTypeInfo = '';
         if (chatData.appointmentType) {
           appointmentTypeInfo = `🏥 Tipo de cita: ${chatData.appointmentType}\n`;
         }
-  
+
         // Send confirmation message
         await this.sendBotMessage(
           session.session_id,
@@ -988,19 +1004,19 @@ export class ChatBotService {
         },
         'ChatSession'
       );
-  
+
       // Send message
       await this.sendBotMessage(
         session.session_id,
         'Has cancelado la cita. ¿Deseas iniciar nuevamente el proceso? Por favor, selecciona la ciudad donde deseas agendar tu cita:'
       );
-  
+
       // Get available cities and send as options
       const cities = await this.getAvailableCities();
       const cityMessage = cities
         .map((city, index) => `${index + 1}. ${city}`)
         .join('\n');
-  
+
       await this.sendBotMessage(session.session_id, cityMessage);
     } else {
       // Invalid response
@@ -1033,29 +1049,18 @@ export class ChatBotService {
    * Get available cities
    */
   private async getAvailableCities(): Promise<string[]> {
-    // This could come from a database table or configuration
-    return [
-      'Bogotá',
-      'Tunja',
-      'Villa de Leyva',
-      'Duitama',
-      'Sogamoso',
-    ];
+    return ['Bogotá', 'Tunja', 'Villa de Leyva', 'Duitama', 'Sogamoso'];
   }
 
-  /**
-   * Get available specialties
+    /**
+   * Obtener especialidades disponibles para una ciudad específica
+   * @param city Ciudad para filtrar
+   * @returns Lista de nombres de especialidades
    */
-  private async getAvailableSpecialties(city: string): Promise<string[]> {
-    // In a real implementation, this would filter based on city
-    // For now, return a static list
-    return [
-      'Medicina General',
-      'Acompañamiento de Citas Médicas',
-      'Cuidador',
-      'Recoger Medicamentos',
-    ];
-  }
+    private async getAvailableSpecialties(city: string): Promise<string[]> {
+      const allSpecialties = await this.medicalSpecialtyService.getAllSpecialtyNames();
+      return allSpecialties;
+    }
 
   /**
    * Get available professionals

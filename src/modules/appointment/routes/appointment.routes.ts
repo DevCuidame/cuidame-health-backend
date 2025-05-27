@@ -23,7 +23,7 @@ router.patch('/:id/status', appointmentController.changeAppointmentStatus);
 /**
  * Rutas solo para administradores
  */
-router.use(restrictTo('admin'));
+// router.use(restrictTo('admin'));
 router.get('/', appointmentController.getAllAppointments);
 router.put('/:id', appointmentController.updateAppointment);
 
