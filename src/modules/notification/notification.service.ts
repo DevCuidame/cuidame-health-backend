@@ -250,10 +250,10 @@ export class NotificationService {
       }
       
       // Verificar preferencias del usuario para este tipo de notificación
-      const preferences = await this.preferenceService.getUserPreferenceByType(
-        notification.user_id,
-        notification.type
-      );
+      // const preferences = await this.preferenceService.getUserPreferenceByType(
+      //   notification.user_id,
+      //   notification.type
+      // );
       
       // Agregar a la cola para envío en la app (siempre)
       await this.queueService.enqueueNotification(
@@ -263,7 +263,7 @@ export class NotificationService {
       );
       
       // Enviar por email si está habilitado
-      if (preferences.email_enabled || user.email) {
+      if (user.email) {
         await this.queueService.enqueueNotification(
           notification.id,
           'email',
@@ -277,7 +277,7 @@ export class NotificationService {
       }
       
       // Enviar por push si está habilitado y hay ID de notificación
-      if (preferences.push_enabled || user.notificationid) {
+      if (user.notificationid) {
         await this.queueService.enqueueNotification(
           notification.id,
           'push',

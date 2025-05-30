@@ -949,7 +949,7 @@ export class ChatBotService {
         const appointment =
           await this.appointmentRequestService.requestAppointment(
             appointmentData,
-            userId!
+            user?.id!
           );
 
         // Update session with appointment id and mark as completed

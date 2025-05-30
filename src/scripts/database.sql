@@ -912,3 +912,14 @@ INSERT INTO appointment_types (name, description, default_duration, color_code, 
 ('Cirugía Menor', 'Procedimientos quirúrgicos ambulatorios de baja complejidad', 90, '#fd79a8', true),
 ('Fisioterapia', 'Sesión de rehabilitación física y motora', 45, '#fdcb6e', true),
 ('Chequeo Ejecutivo', 'Evaluación médica integral preventiva', 120, '#6c5ce7', true);
+
+
+CREATE TABLE temp_professional_data (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    address VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE NO ACTION
+
+);
