@@ -20,7 +20,7 @@ export class Appointment {
   @PrimaryGeneratedColumn('increment')
   id!: number;
 
-  @Column()
+  @Column({ nullable: false })
   patient_id!: number;
 
   @Column()

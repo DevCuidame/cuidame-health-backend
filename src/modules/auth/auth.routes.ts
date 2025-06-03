@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../auth/auth.controller';
 import { validateDto } from '../../middlewares/validator.middleware';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from '../auth/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, VerifyPasswordDto, DeleteAccountDto } from '../auth/auth.dto';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 
 const router = Router();
@@ -55,5 +55,26 @@ router.get('/verify-email/:token', authController.verifyEmail);
  * @access Private
  */
 router.post('/logout', authMiddleware, authController.logout);
+
+/**
+ * @route POST /api/auth/verify-password
+ * @desc Verificar contraseña para eliminación de cuenta
+ * @access Private
+ */
+router.post('/verify-password', authMiddleware, validateDto(VerifyPasswordDto), authController.verifyPasswordForDeletion);
+
+/**
+ * @route GET /api/auth/account-deletion-info
+ * @desc Obtener información para eliminación de cuenta
+ * @access Private
+ */
+router.get('/account-deletion-info', authMiddleware, authController.getAccountDeletionInfo);
+
+/**
+ * @route DELETE /api/auth/delete-account
+ * @desc Eliminar cuenta de usuario
+ * @access Private
+ */
+router.delete('/delete-account', authMiddleware, validateDto(DeleteAccountDto), authController.deleteAccount);
 
 export default router;

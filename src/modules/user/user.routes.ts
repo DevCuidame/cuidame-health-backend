@@ -41,6 +41,13 @@ router.put('/change-password', validateDto(UpdatePasswordDto), userController.ch
 router.put('/profile-image', userController.updateProfileImage);
 
 /**
+ * @route DELETE /api/users/account
+ * @desc Delete current user account
+ * @access Private
+ */
+router.delete('/account', userController.deleteAccount);
+
+/**
  * Routes that require admin role
  */
 router.use(restrictTo('admin'));

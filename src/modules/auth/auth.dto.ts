@@ -90,3 +90,27 @@ export class RefreshTokenDto {
   @IsString({ message: 'El refresh token debe ser una cadena de texto' })
   refresh_token!: string;
 }
+
+export class VerifyPasswordDto {
+  @IsNotEmpty({ message: 'La contraseña es requerida' })
+  @IsString({ message: 'La contraseña debe ser una cadena de texto' })
+  password!: string;
+}
+
+export class DeleteAccountDto {
+  @IsNotEmpty({ message: 'La contraseña es requerida' })
+  @IsString({ message: 'La contraseña debe ser una cadena de texto' })
+  password!: string;
+
+  @IsOptional()
+  @IsString({ message: 'La razón debe ser una cadena de texto' })
+  reason?: string;
+
+  @IsOptional()
+  @IsString({ message: 'La razón personalizada debe ser una cadena de texto' })
+  otherReason?: string;
+
+  @IsNotEmpty({ message: 'La confirmación es requerida' })
+  @IsString({ message: 'La confirmación debe ser una cadena de texto' })
+  confirmation!: string;
+}

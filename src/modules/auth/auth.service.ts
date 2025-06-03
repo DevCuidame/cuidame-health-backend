@@ -6,7 +6,9 @@ import {
   JwtPayload,
   IRegisterData,
   RefreshTokenPayload,
-  IRefreshTokenData
+  IRefreshTokenData,
+  IAccountDeletionInfo,
+  IDeleteAccountData
 } from '../auth/auth.interface';
 import {
   BadRequestError,
@@ -554,5 +556,113 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
     });
+  }
+
+  /**
+   * Verificar contraseña del usuario para eliminación de cuenta
+   * @param userId ID del usuario
+   * @param password Contraseña a verificar
+   * @returns Respuesta de autenticación
+   */
+  async verifyPasswordForDeletion(userId: number, password: string): Promise<IAuthResponse> {
+    // Buscar usuario por ID
+    const user = await this.userRepository.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
+
+    // Buscar usuario por email para incluir la contraseña
+    const userWithPassword = await this.userRepository.findByEmail(user.email, true);
+    
+    if (!userWithPassword || !userWithPassword.password) {
+      throw new UnauthorizedError('Este usuario no tiene contraseña configurada');
+    }
+
+    // Verificar contraseña (compatible con MD5 y PBKDF2)
+    const isPasswordValid = PasswordService.verifyPassword(
+      password,
+      userWithPassword.password
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedError('Contraseña incorrecta');
+    }
+
+    return {
+      success: true,
+      message: 'Contraseña verificada correctamente',
+    };
+  }
+
+  /**
+   * Obtener información para eliminación de cuenta
+   * @returns Información para eliminación de cuenta
+   */
+  async getAccountDeletionInfo(): Promise<IAccountDeletionInfo> {
+    // Lista de razones predefinidas para eliminación de cuenta
+    const reasons = [
+      'Ya no necesito el servicio',
+      'Preocupaciones de privacidad',
+      'Problemas técnicos',
+      'Servicio al cliente',
+      'Otro motivo'
+    ];
+
+    // Texto de confirmación que el usuario debe escribir
+    const confirmationText = 'ELIMINAR';
+
+    return {
+      reasons,
+      confirmationText
+    };
+  }
+
+  /**
+   * Eliminar cuenta de usuario
+   * @param userId ID del usuario
+   * @param deleteData Datos para eliminación de cuenta
+   * @returns Respuesta de autenticación
+   */
+  async deleteAccount(userId: number, deleteData: IDeleteAccountData): Promise<IAuthResponse> {
+    const { password, confirmation, reason, otherReason } = deleteData;
+
+    // Verificar que la confirmación sea correcta
+    const accountInfo = await this.getAccountDeletionInfo();
+    if (confirmation !== accountInfo.confirmationText) {
+      throw new BadRequestError('El texto de confirmación no es correcto');
+    }
+
+    // Verificar contraseña y obtener usuario
+    await this.verifyPasswordForDeletion(userId, password);
+
+    // Registrar la razón de eliminación (esto podría guardarse en una tabla de auditoría)
+    logger.info(`Usuario ${userId} eliminó su cuenta. Razón: ${reason || 'No especificada'} ${otherReason ? `- ${otherReason}` : ''}`);
+
+    // Eliminar usuario (o marcar como inactivo, dependiendo de la política de la aplicación)
+    // Opción 1: Eliminar completamente
+    await this.userRepository.delete(userId, 'Usuario');
+
+    // Opción 2: Marcar como inactivo y anonimizar datos (descomentar si se prefiere esta opción)
+    /*
+    await this.userRepository.update(
+      userId,
+      {
+        active: false,
+        email: `deleted_${userId}_${Date.now()}@deleted.com`,
+        name: 'Usuario eliminado',
+        lastname: '',
+        phone: '',
+        session_token: null,
+        updated_at: new Date(),
+      },
+      'Usuario'
+    );
+    */
+
+    return {
+      success: true,
+      message: 'Cuenta eliminada correctamente',
+    };
   }
 }

@@ -188,4 +188,89 @@ export class AuthController {
       next(error);
     }
   };
+
+  /**
+   * Verificar contraseña para eliminación de cuenta
+   * @route POST /api/auth/verify-password
+   */
+  verifyPasswordForDeletion = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { password } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
+      const result = await this.authService.verifyPasswordForDeletion(userId, password);
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Obtener información para eliminación de cuenta
+   * @route GET /api/auth/account-deletion-info
+   */
+  getAccountDeletionInfo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.authService.getAccountDeletionInfo();
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Información obtenida correctamente',
+        data: result,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Eliminar cuenta de usuario
+   * @route DELETE /api/auth/delete-account
+   */
+  deleteAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const deleteData = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
+      const result = await this.authService.deleteAccount(userId, deleteData);
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -72,3 +72,29 @@ export interface IAuthResponse {
   token?: string;
   refresh_token?: string;
 }
+
+/**
+ * Interfaz para verificación de contraseña
+ */
+export interface IVerifyPasswordData {
+  password: string;
+}
+
+/**
+ * Interfaz para datos de eliminación de cuenta
+ */
+export interface IDeleteAccountData {
+  password: string;
+  reason?: string;
+  otherReason?: string;
+  confirmation: string;
+  timestamp?: string;
+}
+
+/**
+ * Interfaz para información de eliminación de cuenta
+ */
+export interface IAccountDeletionInfo {
+  reasons: string[];
+  confirmationText: string;
+}

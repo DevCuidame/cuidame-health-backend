@@ -230,4 +230,30 @@ export class UserController {
       next(error);
     }
   };
+
+  /**
+   * Eliminar cuenta del usuario autenticado
+   * @route DELETE /api/users/account
+   */
+  deleteAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        throw new BadRequestError('Usuario no autenticado');
+      }
+      
+      const result = await this.userService.deleteAccount(userId);
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
