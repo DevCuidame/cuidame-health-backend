@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  Matches,
+  IsNumber,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty({ message: 'El nombre es requerido' })
@@ -10,24 +19,30 @@ export class CreateUserDto {
   lastname!: string;
 
   @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
-  @IsString({ message: 'El tipo de identificación debe ser una cadena de texto' })
-  typeid!: string; 
+  @IsString({
+    message: 'El tipo de identificación debe ser una cadena de texto',
+  })
+  typeid!: string;
 
   @IsNotEmpty({ message: 'El número de identificación es requerido' })
-  @IsString({ message: 'El número de identificación debe ser una cadena de texto' })
-  numberid!: string;  
+  @IsString({
+    message: 'El número de identificación debe ser una cadena de texto',
+  })
+  numberid!: string;
 
   @IsOptional()
   @IsString({ message: 'El género debe ser una cadena de texto' })
-  gender?: string;  
+  gender?: string;
 
   @IsOptional()
   @IsString({ message: 'La fecha de nacimiento debe ser una cadena de texto' })
-  birth_date?: string;  
+  birth_date?: string;
 
   @IsNotEmpty({ message: 'El teléfono es requerido' })
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
-  @Matches(/^\d{7,15}$/, { message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos' })
+  @Matches(/^\d{7,15}$/, {
+    message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos',
+  })
   phone!: string;
 
   @IsNotEmpty({ message: 'El correo electrónico es requerido' })
@@ -54,11 +69,17 @@ export class CreateUserDto {
   imagebs64?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'El estado de verificación debe ser un valor booleano' })
+  @IsBoolean({
+    message: 'El estado de verificación debe ser un valor booleano',
+  })
   verificado?: boolean;
 }
 
 export class UpdateUserDto {
+  @IsNotEmpty()
+  @IsNumber({}, { message: 'El id debe ser una número' })
+  id!: number;
+
   @IsOptional()
   @IsString({ message: 'El nombre debe ser una cadena de texto' })
   name?: string;
@@ -67,14 +88,36 @@ export class UpdateUserDto {
   @IsString({ message: 'El apellido debe ser una cadena de texto' })
   lastname?: string;
 
+  @IsNotEmpty({ message: 'El tipo de identificación es requerido' })
+  @IsString({
+    message: 'El tipo de identificación debe ser una cadena de texto',
+  })
+  typeid!: string;
+
+  @IsNotEmpty({ message: 'El número de identificación es requerido' })
+  @IsString({
+    message: 'El número de identificación debe ser una cadena de texto',
+  })
+  numberid!: string;
+
   @IsOptional()
   @IsString({ message: 'El teléfono debe ser una cadena de texto' })
-  @Matches(/^\d{7,15}$/, { message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos' })
+  @Matches(/^\d{7,15}$/, {
+    message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos',
+  })
   phone?: string;
 
   @IsOptional()
   @IsString({ message: 'La dirección debe ser una cadena de texto' })
   address?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El género debe ser una cadena de texto' })
+  gender!: string;
+
+  @IsOptional()
+  @IsString({ message: 'La fecha de nacimiento debe ser una cadena de texto' })
+  birth_date!: string;
 
   @IsOptional()
   @IsNumber({}, { message: 'El ID de la ciudad debe ser un número' })
@@ -102,10 +145,17 @@ export class UpdatePasswordDto {
   currentPassword!: string;
 
   @IsNotEmpty({ message: 'La nueva contraseña es requerida' })
-  @MinLength(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' })
+  @MinLength(6, {
+    message: 'La nueva contraseña debe tener al menos 6 caracteres',
+  })
   newPassword!: string;
 
-  @IsNotEmpty({ message: 'La confirmación de la nueva contraseña es requerida' })
-  @MinLength(6, { message: 'La confirmación de la nueva contraseña debe tener al menos 6 caracteres' })
+  @IsNotEmpty({
+    message: 'La confirmación de la nueva contraseña es requerida',
+  })
+  @MinLength(6, {
+    message:
+      'La confirmación de la nueva contraseña debe tener al menos 6 caracteres',
+  })
   confirmPassword!: string;
 }

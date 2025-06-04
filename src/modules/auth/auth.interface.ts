@@ -98,3 +98,11 @@ export interface IAccountDeletionInfo {
   reasons: string[];
   confirmationText: string;
 }
+
+/**
+ * Interfaz para cambio de contraseña
+ */
+export interface IChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}

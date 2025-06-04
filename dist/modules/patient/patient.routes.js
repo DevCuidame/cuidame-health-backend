@@ -18,6 +18,12 @@ router.use(auth_middleware_1.authMiddleware);
  */
 router.get('/my-patients', patientController.getMyPatients);
 /**
+ * @route GET /api/patients/identification/identificationType/identificationNumber
+ * @desc Get patient by identification type and number
+ * @access Private
+ */
+router.get('/identification/:identificationType/:identificationNumber', patientController.getPatientByIdAndNum);
+/**
  * @route GET /api/patients/:id/health-data
  * @desc Obtener un paciente con todos sus datos de salud
  * @access Private

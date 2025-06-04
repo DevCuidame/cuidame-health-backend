@@ -41,6 +41,13 @@ router.put('/change-password', validateDto(UpdatePasswordDto), userController.ch
 router.put('/profile-image', userController.updateProfileImage);
 
 /**
+ * @route PUT /api/users/profile-complete
+ * @desc Update current user profile with profile image
+ * @access Private
+ */
+router.put('/profile-complete', validateDto(UpdateUserDto), userController.updateProfileComplete);
+
+/**
  * @route DELETE /api/users/account
  * @desc Delete current user account
  * @access Private

@@ -8,7 +8,9 @@ const availability_service_1 = require("./availability.service");
 const error_handler_1 = require("../../../utils/error-handler");
 const appointment_model_1 = require("../../../models/appointment.model");
 const notification_model_1 = require("../../../models/notification.model");
+const medical_specialty_service_1 = require("../../../modules/medical-specialty/medical-specialty.service");
 class AppointmentRequestService {
+    medicalSpecialtyService;
     appointmentService;
     availabilityService;
     notificationService;
@@ -16,6 +18,7 @@ class AppointmentRequestService {
         this.appointmentService = new appointment_service_1.AppointmentService();
         this.availabilityService = new availability_service_1.AvailabilityService();
         this.notificationService = new notification_service_1.NotificationService();
+        this.medicalSpecialtyService = new medical_specialty_service_1.MedicalSpecialtyService();
     }
     /**
      * Verificar disponibilidad y solicitar una cita
@@ -49,6 +52,8 @@ class AppointmentRequestService {
         // if (!isAvailable) {
         //   throw new BadRequestError('El horario seleccionado no está disponible');
         // }
+        // Obtener especialidad
+        const specialty = await this.medicalSpecialtyService.getSpecialtyByName(data.specialty);
         // 6. Crear la cita con estado "Solicitada"
         const appointment = await this.appointmentService.createAppointment({
             patient_id: data.patient_id,
@@ -56,6 +61,8 @@ class AppointmentRequestService {
             end_time: endTime,
             status: appointment_model_1.AppointmentStatus.REQUESTED,
             notes: data.notes,
+            location: data.city,
+            specialty_id: specialty?.id ?? undefined,
             modified_by_id: userId
         });
         // 7. Enviar notificaciones

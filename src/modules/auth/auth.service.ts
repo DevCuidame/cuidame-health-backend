@@ -28,6 +28,10 @@ import { FileUploadService } from '../../utils/file-upload.util';
 import { AppDataSource } from '../../core/config/database';
 import { RoleRepository } from '../role/role.repository';
 import { UserRole } from '../../models/user-role.model';
+import { EmailService } from '../notification/services/email.service';
+import { formatBirthDate } from '../../utils/date-format';
+import { NotificationTemplateService } from '../notification/services/notification-template.service';
+import { TemplateFileService } from '../notification/services/template-file.service';
 
 
 export class AuthService {
@@ -36,6 +40,9 @@ export class AuthService {
   private healthRepository: HealthRepository;
   private medicalInfoRepository: MedicalInfoRepository;
   private roleRepository: RoleRepository;
+  private emailService: EmailService;
+  private notificationTemplateService: NotificationTemplateService;
+  private templateFileService: TemplateFileService;
 
   constructor() {
     this.userRepository = new UserRepository();
@@ -43,6 +50,9 @@ export class AuthService {
     this.healthRepository = new HealthRepository();
     this.medicalInfoRepository = new MedicalInfoRepository();
     this.roleRepository = new RoleRepository();
+    this.emailService = EmailService.getInstance();
+    this.notificationTemplateService = new NotificationTemplateService();
+    this.templateFileService = new TemplateFileService();
   }
 
   /**
@@ -91,6 +101,8 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
   //     'Usuario'
   //   );
   // }
+
+ 
 
   let message = 'Sesión iniciada exitosamente';
   if (!user.verificado) {
@@ -194,7 +206,10 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       typeid: user.typeid,
       numberid: user.numberid,
       address: user.address,
+      gender: user.gender,
+      birth_date: formatBirthDate(user.birth_date), 
       city_id: user.city_id,
+      department: null,
       pubname: user.pubname,
       privname: user.privname,
       imagebs64: user.imagebs64,
@@ -206,6 +221,16 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     patientCount: patientCount,
     cared_persons: cared_persons,
   };
+
+  const locationRepository = AppDataSource.getRepository('townships');
+  const cityData = await locationRepository.findOne({
+    where: { id: user.city_id },
+    relations: ['department']
+  });
+
+  if (cityData?.department) {
+    userData.user.department = cityData.department.id;
+  }
 
   return {
     success: true,
@@ -431,7 +456,68 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     // Actualizar token en la base de datos
     await this.userRepository.updateSessionToken(user.id, resetToken);
 
-    // TODO: Enviar email con instrucciones (implementar en un servicio de email)
+    // Construir la URL de restablecimiento
+    const resetUrl = `https://${config.server.production_url}/reset-password?token=${resetToken}`;
+    
+    // Enviar email con instrucciones
+    try {
+      // Intentar usar la plantilla desde archivo
+      let emailHtml = '';
+      let emailSubject = 'Restablecimiento de contraseña';
+      
+      try {
+        // Intentar obtener la plantilla desde archivo
+        emailHtml = await this.templateFileService.renderTemplate(
+          'password_reset', 
+          {
+            userName: user.name,
+            resetUrl: resetUrl,
+            expirationTime: '1 hora'
+          }
+        );
+      } catch (templateError) {
+        // Si no se puede leer la plantilla desde archivo, intentar usar la plantilla de la base de datos
+        logger.warn('No se pudo leer la plantilla desde archivo, intentando usar plantilla de la base de datos');
+        
+        try {
+          // Intentar obtener la plantilla por código desde la base de datos
+          const { subject, body } = await this.notificationTemplateService.renderTemplate(
+            'password_reset', 
+            {
+              userName: user.name,
+              resetUrl: resetUrl,
+              expirationTime: '1 hora'
+            }
+          );
+          emailHtml = body;
+          emailSubject = subject;
+        } catch (dbTemplateError) {
+          // Si no existe la plantilla en la base de datos, usar la plantilla en línea
+          logger.warn('Plantilla de restablecimiento de contraseña no encontrada, usando plantilla por defecto');
+          emailHtml = `
+            <h1>Restablecimiento de contraseña</h1>
+            <p>Hola ${user.name},</p>
+            <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
+            <p><a href="${resetUrl}">Restablecer contraseña</a></p>
+            <p>Este enlace expirará en 1 hora.</p>
+            <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
+            <p>Saludos,<br>El equipo de Cuidame Health</p>
+          `;
+        }
+      }
+      
+      // Enviar el correo
+      await this.emailService.sendEmail({
+        to: user.email,
+        subject: emailSubject,
+        html: emailHtml
+      });
+      
+      logger.info(`Email de restablecimiento enviado a ${user.email}`);
+    } catch (error) {
+      logger.error('Error al enviar email de restablecimiento:', error);
+      // No devolvemos el error al usuario por seguridad
+    }
 
     return {
       success: true,
@@ -515,6 +601,57 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       }
       throw error;
     }
+  }
+
+  /**
+   * Cambiar contraseña de usuario
+   * @param userId ID del usuario
+   * @param currentPassword Contraseña actual
+   * @param newPassword Nueva contraseña
+   * @returns Respuesta de autenticación
+   */
+  async changePassword(userId: number, currentPassword: string, newPassword: string): Promise<IAuthResponse> {
+    // Buscar usuario por ID
+    const user = await this.userRepository.findById(userId);
+    
+    if (!user) {
+      throw new NotFoundError('Usuario no encontrado');
+    }
+
+    // Buscar usuario por email para incluir la contraseña
+    const userWithPassword = await this.userRepository.findByEmail(user.email, true);
+    
+    if (!userWithPassword || !userWithPassword.password) {
+      throw new UnauthorizedError('Este usuario no tiene contraseña configurada');
+    }
+
+    // Verificar contraseña actual (compatible con MD5 y PBKDF2)
+    const isPasswordValid = PasswordService.verifyPassword(
+      currentPassword,
+      userWithPassword.password
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedError('La contraseña actual es incorrecta');
+    }
+
+    // Generar hash de la nueva contraseña
+    const hashedPassword = PasswordService.hashPasswordMD5(newPassword);
+
+    // Actualizar contraseña
+    await this.userRepository.update(
+      user.id,
+      {
+        password: hashedPassword,
+        updated_at: new Date(),
+      },
+      'Usuario'
+    );
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente',
+    };
   }
 
   /**

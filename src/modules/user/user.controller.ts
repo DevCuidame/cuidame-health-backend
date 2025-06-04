@@ -120,6 +120,35 @@ export class UserController {
   };
 
   /**
+   * Actualizar perfil del usuario autenticado incluyendo foto de perfil
+   * @route PUT /api/users/profile-complete
+   */
+  updateProfileComplete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        throw new BadRequestError('Usuario no autenticado');
+      }
+      
+      const userData: UpdateUserDto = req.body;
+      const updatedUser = await this.userService.updateUserWithProfileImage(userId, userData);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Perfil y foto actualizados correctamente',
+        data: updatedUser,
+        timestamp: new Date().toISOString()
+      };
+      console.log("🚀 ~ UserController ~ updateProfileComplete ~ response:", response)
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * Cambiar contraseña del usuario autenticado
    * @route PUT /api/users/change-password
    */

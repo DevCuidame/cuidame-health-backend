@@ -19,7 +19,7 @@ class AppointmentController {
             const response = {
                 success: true,
                 data: appointments,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }
@@ -41,7 +41,7 @@ class AppointmentController {
             const response = {
                 success: true,
                 data: appointment,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }
@@ -63,7 +63,7 @@ class AppointmentController {
             const response = {
                 success: true,
                 data: appointments,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }
@@ -85,7 +85,7 @@ class AppointmentController {
             const response = {
                 success: true,
                 data: appointments,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }
@@ -100,6 +100,7 @@ class AppointmentController {
     createAppointment = async (req, res, next) => {
         try {
             const data = req.body;
+            delete data.id;
             const userId = req.user?.id;
             // Convertir las fechas de string a Date si es necesario
             if (typeof data.start_time === 'string') {
@@ -108,12 +109,36 @@ class AppointmentController {
             if (typeof data.end_time === 'string') {
                 data.end_time = new Date(data.end_time);
             }
+            data.patient_id = parseInt(data.patient_id);
+            data.created_at = new Date();
+            data.updated_at = new Date();
+            if (data.professional) {
+                // Check if all required properties exist before setting location
+                if (data.professional.attention_township_name &&
+                    data.professional.user &&
+                    data.professional.user.first_name) {
+                    // Use empty string as fallback for missing city name
+                    const cityName = data.professional.consultation_address || '';
+                    data.location =
+                        data.professional.attention_township_name +
+                            '_' +
+                            cityName +
+                            '_' +
+                            data.professional.user.first_name;
+                }
+                // Set professional_id from professional object if it exists
+                if (data.professional.id) {
+                    data.professional_id = data.professional.id;
+                }
+                // Remove the professional object to prevent conflicts
+                delete data.professional;
+            }
             const appointment = await this.appointmentService.createAppointment(data, userId);
             const response = {
                 success: true,
                 message: 'Cita creada correctamente',
                 data: appointment,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(201).json(response);
         }
@@ -140,12 +165,18 @@ class AppointmentController {
             if (typeof data.end_time === 'string') {
                 data.end_time = new Date(data.end_time);
             }
+            data.location =
+                data.professional.attention_township_name +
+                    '_' +
+                    data.professional.attention_city_name +
+                    '_' +
+                    data.professional.user.first_name;
             const appointment = await this.appointmentService.updateAppointment(id, data, userId);
             const response = {
                 success: true,
                 message: 'Cita actualizada correctamente',
                 data: appointment,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }
@@ -174,7 +205,7 @@ class AppointmentController {
                 success: true,
                 message: `Estado de cita actualizado a "${status}"`,
                 data: appointment,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             };
             res.status(200).json(response);
         }

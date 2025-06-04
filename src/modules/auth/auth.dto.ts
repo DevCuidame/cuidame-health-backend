@@ -114,3 +114,15 @@ export class DeleteAccountDto {
   @IsString({ message: 'La confirmación debe ser una cadena de texto' })
   confirmation!: string;
 }
+
+
+export class ChangePasswordDto {
+  @IsNotEmpty({ message: 'La contraseña actual es requerida' })
+  @IsString({ message: 'La contraseña actual debe ser una cadena de texto' })
+  currentPassword!: string;
+
+  @IsNotEmpty({ message: 'La nueva contraseña es requerida' })
+  @MinLength(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' })
+  @IsString({ message: 'La nueva contraseña debe ser una cadena de texto' })
+  newPassword!: string;
+}

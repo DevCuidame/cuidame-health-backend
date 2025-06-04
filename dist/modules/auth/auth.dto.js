@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RefreshTokenDto = exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.RegisterDto = exports.LoginDto = void 0;
+exports.DeleteAccountDto = exports.VerifyPasswordDto = exports.RefreshTokenDto = exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.RegisterDto = exports.LoginDto = void 0;
 const class_validator_1 = require("class-validator");
 class LoginDto {
     email;
@@ -145,3 +145,39 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'El refresh token debe ser una cadena de texto' }),
     __metadata("design:type", String)
 ], RefreshTokenDto.prototype, "refresh_token", void 0);
+class VerifyPasswordDto {
+    password;
+}
+exports.VerifyPasswordDto = VerifyPasswordDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'La contraseña es requerida' }),
+    (0, class_validator_1.IsString)({ message: 'La contraseña debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], VerifyPasswordDto.prototype, "password", void 0);
+class DeleteAccountDto {
+    password;
+    reason;
+    otherReason;
+    confirmation;
+}
+exports.DeleteAccountDto = DeleteAccountDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'La contraseña es requerida' }),
+    (0, class_validator_1.IsString)({ message: 'La contraseña debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], DeleteAccountDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'La razón debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], DeleteAccountDto.prototype, "reason", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'La razón personalizada debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], DeleteAccountDto.prototype, "otherReason", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'La confirmación es requerida' }),
+    (0, class_validator_1.IsString)({ message: 'La confirmación debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], DeleteAccountDto.prototype, "confirmation", void 0);

@@ -299,4 +299,63 @@ export class AppointmentController {
       next(error);
     }
   };
+
+  /**
+   * Buscar citas con filtros
+   * @route GET /api/appointments/search
+   */
+  searchAppointments = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const searchTerm = req.query.search as string;
+      
+      // Extraer filtros de la query
+      const filters: any = {};
+      
+      // Procesar filtros desde la query
+      if (req.query.professionalId) {
+        filters.professionalId = parseInt(req.query.professionalId as string);
+      }
+
+      if (req.query.patientId) {
+        filters.patientId = parseInt(req.query.patientId as string);
+      }
+
+      if (req.query.appointmentTypeId) {
+        filters.appointmentTypeId = parseInt(req.query.appointmentTypeId as string);
+      }
+
+      if (req.query.status) {
+        // Si es un array de estados
+        if (Array.isArray(req.query.status)) {
+          filters.status = req.query.status as AppointmentStatus[];
+        } else {
+          filters.status = req.query.status as AppointmentStatus;
+        }
+      }
+
+      if (req.query.startDate) {
+        filters.startDate = new Date(req.query.startDate as string);
+      }
+
+      if (req.query.endDate) {
+        filters.endDate = new Date(req.query.endDate as string);
+      }
+      
+      const appointments = await this.appointmentService.searchAppointments(searchTerm, filters);
+
+      const response: ApiResponse = {
+        success: true,
+        data: appointments,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

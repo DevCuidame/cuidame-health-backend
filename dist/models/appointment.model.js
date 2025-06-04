@@ -16,6 +16,7 @@ const patient_model_1 = require("./patient.model");
 const health_professional_model_1 = require("./health-professional.model");
 const appointment_type_model_1 = require("./appointment-type.model");
 const recurring_appointment_model_1 = require("./recurring-appointment.model");
+const medical_specialties_model_1 = require("./medical-specialties.model");
 var AppointmentStatus;
 (function (AppointmentStatus) {
     AppointmentStatus["REQUESTED"] = "requested";
@@ -36,11 +37,14 @@ let Appointment = class Appointment {
     notes;
     cancellation_reason;
     reminder_sent;
-    modified_by_id; // ID del usuario que modificó la cita por última vez
-    recurring_appointment_id; // ID de la cita recurrente a la que pertenece
+    specialty_id;
+    location;
+    modified_by_id;
+    recurring_appointment_id;
     created_at;
     updated_at;
     // Relaciones
+    specialty;
     patient;
     professional;
     appointmentType;
@@ -52,7 +56,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Appointment.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ nullable: false }),
     __metadata("design:type", Number)
 ], Appointment.prototype, "patient_id", void 0);
 __decorate([
@@ -94,6 +98,14 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
+], Appointment.prototype, "specialty_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Appointment.prototype, "location", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
 ], Appointment.prototype, "modified_by_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
@@ -107,6 +119,11 @@ __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], Appointment.prototype, "updated_at", void 0);
+__decorate([
+    (0, typeorm_1.OneToOne)(() => medical_specialties_model_1.MedicalSpecialties),
+    (0, typeorm_1.JoinColumn)({ name: 'specialty_id' }),
+    __metadata("design:type", medical_specialties_model_1.MedicalSpecialties)
+], Appointment.prototype, "specialty", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => patient_model_1.Patient),
     (0, typeorm_1.JoinColumn)({ name: 'patient_id' }),

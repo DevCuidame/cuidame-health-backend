@@ -21,7 +21,7 @@ router.patch('/:id/status', appointmentController.changeAppointmentStatus);
 /**
  * Rutas solo para administradores
  */
-router.use((0, auth_middleware_1.restrictTo)('admin'));
+// router.use(restrictTo('admin'));
 router.get('/', appointmentController.getAllAppointments);
 router.put('/:id', appointmentController.updateAppointment);
 exports.default = router;

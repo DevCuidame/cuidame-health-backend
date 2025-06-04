@@ -49,4 +49,22 @@ router.get('/verify-email/:token', authController.verifyEmail);
  * @access Private
  */
 router.post('/logout', auth_middleware_1.authMiddleware, authController.logout);
+/**
+ * @route POST /api/auth/verify-password
+ * @desc Verificar contraseña para eliminación de cuenta
+ * @access Private
+ */
+router.post('/verify-password', auth_middleware_1.authMiddleware, (0, validator_middleware_1.validateDto)(auth_dto_1.VerifyPasswordDto), authController.verifyPasswordForDeletion);
+/**
+ * @route GET /api/auth/account-deletion-info
+ * @desc Obtener información para eliminación de cuenta
+ * @access Private
+ */
+router.get('/account-deletion-info', auth_middleware_1.authMiddleware, authController.getAccountDeletionInfo);
+/**
+ * @route DELETE /api/auth/delete-account
+ * @desc Eliminar cuenta de usuario
+ * @access Private
+ */
+router.delete('/delete-account', auth_middleware_1.authMiddleware, (0, validator_middleware_1.validateDto)(auth_dto_1.DeleteAccountDto), authController.deleteAccount);
 exports.default = router;

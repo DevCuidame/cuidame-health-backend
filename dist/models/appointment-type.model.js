@@ -17,9 +17,9 @@ let AppointmentType = class AppointmentType {
     id;
     name;
     description;
-    default_duration; // en minutos
+    default_duration;
     is_active;
-    color_code; // Para representación visual
+    color_code;
     created_at;
     updated_at;
     // Relaciones

@@ -20,6 +20,7 @@ const chat_message_repository_1 = require("./chat-message.repository");
 const appointment_model_1 = require("../../models/appointment.model");
 const email_service_1 = require("../../modules/notification/services/email.service");
 const user_repository_1 = require("../../modules/user/user.repository");
+const medical_specialty_service_1 = require("../../modules/medical-specialty/medical-specialty.service");
 class ChatBotService {
     chatSessionRepository;
     chatMessageRepository;
@@ -29,6 +30,7 @@ class ChatBotService {
     appointmentRequestService;
     availabilityService;
     userRepository;
+    medicalSpecialtyService;
     constructor() {
         this.chatSessionRepository = new chat_session_repository_1.ChatSessionRepository();
         this.chatMessageRepository = new chat_message_repository_1.ChatMessageRepository();
@@ -38,6 +40,7 @@ class ChatBotService {
         this.appointmentRequestService = new appointment_request_service_1.AppointmentRequestService();
         this.availabilityService = new availability_service_1.AvailabilityService();
         this.userRepository = new user_repository_1.UserRepository();
+        this.medicalSpecialtyService = new medical_specialty_service_1.MedicalSpecialtyService();
     }
     /**
      * Initialize a new chat session
@@ -296,10 +299,14 @@ class ChatBotService {
         const cleanMessage = message.trim().toLowerCase();
         // Verificar la respuesta del usuario
         let appointmentType = null;
-        if (cleanMessage === '1' || cleanMessage === 'virtual' || cleanMessage === 'v') {
+        if (cleanMessage === '1' ||
+            cleanMessage === 'virtual' ||
+            cleanMessage === 'v') {
             appointmentType = 'Virtual';
         }
-        else if (cleanMessage === '2' || cleanMessage === 'presencial' || cleanMessage === 'p') {
+        else if (cleanMessage === '2' ||
+            cleanMessage === 'presencial' ||
+            cleanMessage === 'p') {
             appointmentType = 'Presencial';
         }
         if (!appointmentType) {
@@ -667,7 +674,6 @@ class ChatBotService {
                 const patient = await this.patientRepository.findOneByOptions({
                     where: { id: session.patient_id },
                 });
-                console.log("🚀 ~ ChatBotService ~ patient:", patient);
                 const userId = patient?.a_cargo_id;
                 const user = userId ? await this.userRepository.findById(userId) : null;
                 const appointmentData = {
@@ -684,8 +690,8 @@ class ChatBotService {
                     const emailService = email_service_1.EmailService.getInstance();
                     // Preparar los datos del correo
                     const emailData = {
-                        to: "contacto.eli@cuidame.tech",
-                        subject: "Nueva solicitud de cita registrada",
+                        to: 'contacto.eli@cuidame.tech',
+                        subject: 'Nueva solicitud de cita registrada',
                         html: `
               <h2>Nueva solicitud de cita</h2>
               <p><strong>Paciente:</strong> ${chatData.patientName}</p>
@@ -696,7 +702,7 @@ class ChatBotService {
               <p><strong>Especialidad:</strong> ${chatData.selectedSpecialty}</p>
               <p><strong>Fecha de solicitud:</strong> ${new Date().toLocaleString()}</p>
               <p>Esta cita requiere asignación de profesional, fecha y hora.</p>
-            `
+            `,
                     };
                     // Enviar el correo
                     const result = await emailService.sendEmail(emailData);
@@ -712,7 +718,7 @@ class ChatBotService {
                     // No lanzamos el error para que no afecte al flujo principal
                 }
                 // Create appointment request
-                const appointment = await this.appointmentRequestService.requestAppointment(appointmentData, userId);
+                const appointment = await this.appointmentRequestService.requestAppointment(appointmentData, user?.id);
                 // Update session with appointment id and mark as completed
                 await this.chatSessionRepository.update(session.id, {
                     appointment_id: appointment.id,
@@ -780,27 +786,16 @@ class ChatBotService {
      * Get available cities
      */
     async getAvailableCities() {
-        // This could come from a database table or configuration
-        return [
-            'Bogotá',
-            'Tunja',
-            'Villa de Leyva',
-            'Duitama',
-            'Sogamoso',
-        ];
+        return ['Bogotá', 'Tunja', 'Villa de Leyva', 'Duitama', 'Sogamoso'];
     }
     /**
-     * Get available specialties
-     */
+   * Obtener especialidades disponibles para una ciudad específica
+   * @param city Ciudad para filtrar
+   * @returns Lista de nombres de especialidades
+   */
     async getAvailableSpecialties(city) {
-        // In a real implementation, this would filter based on city
-        // For now, return a static list
-        return [
-            'Medicina General',
-            'Acompañamiento de Citas Médicas',
-            'Cuidador',
-            'Recoger Medicamentos',
-        ];
+        const allSpecialties = await this.medicalSpecialtyService.getAllSpecialtyNames();
+        return allSpecialties;
     }
     /**
      * Get available professionals

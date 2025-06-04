@@ -16,6 +16,7 @@ import {
 import { CodeRepository } from '../code/code.repository';
 import { AppDataSource } from '../../core/config/database';
 import { HealthDataService } from '../health/health-data.service';
+import { ChatSessionRepository } from '../chat/chat-session.repository';
 
 export class PatientService {
   private patientRepository: PatientRepository;
@@ -533,17 +534,17 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
    * @param caregiverId ID del cuidador (para verificar permisos)
    * @returns Confirmación de eliminación
    */
-  async deletePatient(
-    patientId: number,
-    caregiverId?: number
-  ): Promise<{ success: boolean; message: string }> {
-    // Verificar permisos
+  async deletePatient(patientId: number, caregiverId?: number): Promise<any> {
     const patient = await this.getPatientById(patientId, caregiverId);
 
     // Si el familiar tiene un hashcode, liberarlo para su reutilización
     if (patient.code) {
       await this.codeRepository.releaseCode(patient.code);
     }
+
+    // Eliminar sesiones de chat relacionadas con el paciente
+    const chatSessionRepository = new ChatSessionRepository();
+    await chatSessionRepository.deleteByPatientId(patientId);
 
     // Eliminar paciente
     const result = await this.patientRepository.delete(patientId, 'Paciente');

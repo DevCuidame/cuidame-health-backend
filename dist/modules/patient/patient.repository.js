@@ -40,11 +40,11 @@ class PatientRepository extends base_repository_1.BaseRepository {
         return count > 0;
     }
     /**
-    * Verifica si ya existe un paciente con el mismo número de teléfono
-    * @param numeroid Número de telefono a verificar
-    * @param id ID del paciente a excluir (para actualizaciones)
-    * @returns true si el paciente ya existe, false en caso contrario
-    */
+     * Verifica si ya existe un paciente con el mismo número de teléfono
+     * @param numeroid Número de telefono a verificar
+     * @param id ID del paciente a excluir (para actualizaciones)
+     * @returns true si el paciente ya existe, false en caso contrario
+     */
     async existsByPhoneNumber(phone, id) {
         const query = this.repository
             .createQueryBuilder('patient')
@@ -92,6 +92,17 @@ class PatientRepository extends base_repository_1.BaseRepository {
             },
         });
         // Formatear las URLs de las imágenes
+        return patients.map((patient) => this.formatPatientImageUrl(patient));
+    }
+    /**
+     * Encuentra paciente por número de identificación y tipo
+     * @param numeroid Número de identificación
+     * @returns PAciente encontrado o null
+     */
+    async findByIdAndNum(identificationType, identificationNumber) {
+        const patients = await this.repository.find({
+            where: { numeroid: identificationNumber, tipoid: identificationType },
+        });
         return patients.map((patient) => this.formatPatientImageUrl(patient));
     }
     /**

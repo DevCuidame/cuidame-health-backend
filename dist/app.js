@@ -13,13 +13,6 @@ const cors_middleware_1 = require("./middlewares/cors.middleware");
 const app = (0, express_1.default)();
 app.use(cors_middleware_1.corsMiddleware);
 (0, express_2.setupExpress)(app);
-app.use((req, res, next) => {
-    if (req.url?.startsWith('/ws/')) {
-        req.wsHandled = true;
-        return next('router');
-    }
-    next();
-});
 // Middleware de logging para debug
 app.use((req, res, next) => {
     logger_1.default.info(`📥 ${req.method} ${req.url}`);

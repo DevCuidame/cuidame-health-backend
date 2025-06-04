@@ -197,5 +197,27 @@ class UserController {
             next(error);
         }
     };
+    /**
+     * Eliminar cuenta del usuario autenticado
+     * @route DELETE /api/users/account
+     */
+    deleteAccount = async (req, res, next) => {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                throw new error_handler_1.BadRequestError('Usuario no autenticado');
+            }
+            const result = await this.userService.deleteAccount(userId);
+            const response = {
+                success: result.success,
+                message: result.message,
+                timestamp: new Date().toISOString()
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            next(error);
+        }
+    };
 }
 exports.UserController = UserController;

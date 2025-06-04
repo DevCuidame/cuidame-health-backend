@@ -29,6 +29,7 @@ class AppointmentService {
                 'professional',
                 'professional.user',
                 'appointmentType',
+                'specialty'
             ],
         });
     }
@@ -91,19 +92,45 @@ class AppointmentService {
         if (userId) {
             data.modified_by_id = userId;
         }
-        return await this.appointmentRepository.create(data);
+        const appointmentData = {
+            patient_id: data.patient_id,
+            professional_id: data.professional_id,
+            appointment_type_id: data.appointment_type_id,
+            start_time: data.start_time,
+            end_time: data.end_time,
+            status: data.status || appointment_model_1.AppointmentStatus.REQUESTED,
+            notes: data.notes || '',
+            cancellation_reason: data.cancellation_reason,
+            reminder_sent: data.reminder_sent || false,
+            specialty_id: data.specialty_id,
+            location: data.location,
+            modified_by_id: userId || data.modified_by_id,
+            recurring_appointment_id: data.recurring_appointment_id,
+            created_at: new Date(),
+            updated_at: new Date()
+        };
+        return await this.appointmentRepository.create(appointmentData);
     }
     /**
      * Actualizar una cita
      */
     async updateAppointment(id, data, userId) {
         // Verificar que la cita existe
-        const appointment = await this.getAppointmentById(id);
-        // Si se está cambiando horario o profesional, verificar que no haya conflictos
-        if ((data.start_time || data.end_time || data.professional_id) &&
-            (await this.appointmentRepository.hasConflictingAppointments(data.professional_id || appointment.professional_id, data.start_time || appointment.start_time, data.end_time || appointment.end_time, id))) {
-            throw new error_handler_1.BadRequestError('El profesional ya tiene una cita programada en este horario');
-        }
+        // const appointment = await this.getAppointmentById(id);
+        // // Si se está cambiando horario o profesional, verificar que no haya conflictos
+        // if (
+        //   (data.start_time || data.end_time || data.professional_id) &&
+        //   (await this.appointmentRepository.hasConflictingAppointments(
+        //     (data.professional_id as number) || appointment.professional_id!,
+        //     (data.start_time as Date) || appointment.start_time,
+        //     (data.end_time as Date) || appointment.end_time,
+        //     id
+        //   ))
+        // ) {
+        //   throw new BadRequestError(
+        //     'El profesional ya tiene una cita programada en este horario'
+        //   );
+        // }
         // Guardar información sobre quién modificó la cita
         if (userId) {
             data.modified_by_id = userId;

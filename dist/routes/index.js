@@ -29,6 +29,7 @@ const patient_appointment_routes_1 = __importDefault(require("../modules/appoint
 const chat_routes_1 = __importDefault(require("../modules/chat/chat.routes"));
 const recurring_appointment_routes_1 = __importDefault(require("../modules/appointment/routes/recurring-appointment.routes"));
 const questionnaire_routes_1 = __importDefault(require("../modules/appointment/routes/questionnaire.routes"));
+const medical_specialty_routes_1 = __importDefault(require("../modules/medical-specialty/medical-specialty.routes"));
 const notification_routes_1 = require("../modules/notification/notification.routes");
 const router = (0, express_1.Router)();
 //Index
@@ -43,6 +44,7 @@ router.use('/health-data', health_data_routes_1.default);
 router.use('/code', code_routes_1.default);
 router.use('/contacts', contact_routes_1.default);
 router.use('/patient/appointments', patient_appointment_routes_1.default);
+router.use('/specialties', medical_specialty_routes_1.default);
 router.use('/chat', chat_routes_1.default);
 router.use('/professionals', health_professional_routes_1.default);
 router.use('/appointment-types', appointment_type_routes_1.default);

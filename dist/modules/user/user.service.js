@@ -136,5 +136,22 @@ class UserService {
             message: 'Rol eliminado correctamente'
         };
     }
+    /**
+     * Eliminar cuenta de usuario
+     * @param userId ID del usuario a eliminar
+     * @returns Confirmación de eliminación
+     */
+    async deleteAccount(userId) {
+        await this.getUserById(userId);
+        // Eliminar usuario
+        const result = await this.userRepository.delete(userId, 'Usuario');
+        if (!result) {
+            throw new error_handler_1.BadRequestError('No se pudo eliminar la cuenta de usuario');
+        }
+        return {
+            success: true,
+            message: 'Cuenta eliminada correctamente'
+        };
+    }
 }
 exports.UserService = UserService;

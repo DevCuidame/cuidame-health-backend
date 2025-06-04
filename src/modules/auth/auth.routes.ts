@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../auth/auth.controller';
 import { validateDto } from '../../middlewares/validator.middleware';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, VerifyPasswordDto, DeleteAccountDto } from '../auth/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, VerifyPasswordDto, DeleteAccountDto, ChangePasswordDto } from '../auth/auth.dto';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 
 const router = Router();
@@ -76,5 +76,12 @@ router.get('/account-deletion-info', authMiddleware, authController.getAccountDe
  * @access Private
  */
 router.delete('/delete-account', authMiddleware, validateDto(DeleteAccountDto), authController.deleteAccount);
+
+/**
+ * @route PUT /api/auth/change-password
+ * @desc Cambiar contraseña de usuario
+ * @access Private
+ */
+router.put('/change-password', authMiddleware, validateDto(ChangePasswordDto), authController.changePassword);
 
 export default router;

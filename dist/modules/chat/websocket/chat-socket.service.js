@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatSocketService = void 0;
 // src/modules/chat/websocket/chat-socket.service.ts
 const ws_1 = __importDefault(require("ws"));
-const url_1 = __importDefault(require("url"));
 const uuid_1 = require("uuid");
 const chat_bot_service_1 = require("../chat-bot.service");
 const chat_message_repository_1 = require("../chat-message.repository");
@@ -20,37 +19,20 @@ class ChatSocketService {
     clients;
     constructor(server) {
         this.wss = new ws_1.default.Server({
-            server,
+            noServer: true,
             path: '/ws/chat',
-            perMessageDeflate: {
-                zlibDeflateOptions: {
-                    chunkSize: 1024,
-                    memLevel: 7,
-                    level: 3,
-                },
-                zlibInflateOptions: {
-                    chunkSize: 10 * 1024,
-                },
-                // Other options
-                clientNoContextTakeover: true,
-                serverNoContextTakeover: true,
-                serverMaxWindowBits: 10,
-                threshold: 1024, // Size (in bytes) below which messages should not be compressed
-            },
+            perMessageDeflate: false,
             maxPayload: 1024 * 1024,
             clientTracking: true,
-            verifyClient: (info, callback) => {
-                const pathname = url_1.default.parse(info.req.url || '').pathname;
-                const isValid = pathname === '/ws/chat';
-                logger_1.default.info(`Connection ${isValid ? 'approved' : 'rejected'} for ${pathname}`);
-                callback(isValid);
-            },
         });
         this.chatBotService = new chat_bot_service_1.ChatBotService();
         this.chatSessionRepository = new chat_session_repository_1.ChatSessionRepository();
         this.chatMessageRepository = new chat_message_repository_1.ChatMessageRepository();
         this.clients = new Map();
         this.initialize();
+    }
+    getServer() {
+        return this.wss;
     }
     initialize() {
         // Log when server is ready

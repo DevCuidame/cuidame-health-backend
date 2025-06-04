@@ -4,6 +4,7 @@ import { PaginatedResult, PaginationParams } from "src/core/interfaces/response.
 import { UserFilterOptions } from "./user.interface";
 import { PasswordService } from "../../utils/password.util";
 import { User } from "@models/user.model";
+import { FileUploadService } from "../../utils/file-upload.util";
 
 export class UserService {
   private userRepository: UserRepository;
@@ -55,16 +56,61 @@ export class UserService {
     // Comprobar si el usuario existe
     await this.getUserById(userId);
     
-    // Si se intenta actualizar el email, verificar que no exista otro usuario con ese email
-    if (userData.email) {
-      const existingUser = await this.userRepository.findByEmail(userData.email);
-      if (existingUser && existingUser.id !== userId) {
-        throw new BadRequestError('El correo electrónico ya está en uso por otro usuario');
+    return await this.userRepository.update(userId, userData, 'Usuario');
+  }
+
+  /**
+   * Actualizar datos de un usuario incluyendo su foto de perfil
+   * @param userId ID del usuario
+   * @param userData Datos a actualizar incluyendo imagen en base64
+   * @returns Usuario actualizado
+   */
+  async updateUserWithProfileImage(userId: number, userData: Partial<User> & { imagebs64?: string }): Promise<User> {
+    // Comprobar si el usuario existe
+    await this.getUserById(userId);
+    
+    // Extraer la imagen base64 si existe
+    const imageBase64 = userData.imagebs64;
+    
+    // Crear una copia de los datos sin la imagen para actualizar primero la información básica
+    const userDataToUpdate = { ...userData };
+    delete userDataToUpdate.imagebs64;
+    
+    // Actualizar datos básicos del usuario
+    let updatedUser = await this.userRepository.update(userId, {
+      ...userDataToUpdate,
+      updated_at: new Date()
+    }, 'Usuario');
+    
+    // Si hay imagen, procesarla y actualizar la URL
+    if (imageBase64) {
+      try {
+        // Guardar imagen usando el servicio de utilidad
+        const photoUrl = await FileUploadService.saveBase64Image(
+          imageBase64,
+          'users',
+          'profile'
+        );
+        
+        if (photoUrl) {
+          // Actualizar la URL y el nombre público en la base de datos
+          updatedUser = await this.userRepository.update(
+            userId,
+            {
+              path: photoUrl,
+              pubname: userData.pubname,
+              updated_at: new Date()
+            },
+            'Usuario'
+          );
+        }
+      } catch (error) {
+        console.error('Error al guardar imagen de usuario:', error);
+        // No fallamos el proceso completo si hay error en la imagen
       }
     }
     
-    // Actualizar usuario
-    return await this.userRepository.update(userId, userData, 'Usuario');
+    return updatedUser;
   }
 
   /**

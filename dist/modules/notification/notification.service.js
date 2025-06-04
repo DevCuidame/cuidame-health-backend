@@ -212,11 +212,14 @@ class NotificationService {
                 throw new error_handler_1.NotFoundError(`Usuario con ID ${notification.user_id} no encontrado`);
             }
             // Verificar preferencias del usuario para este tipo de notificación
-            const preferences = await this.preferenceService.getUserPreferenceByType(notification.user_id, notification.type);
+            // const preferences = await this.preferenceService.getUserPreferenceByType(
+            //   notification.user_id,
+            //   notification.type
+            // );
             // Agregar a la cola para envío en la app (siempre)
             await this.queueService.enqueueNotification(notification.id, 'inapp', { recipient: user.email });
             // Enviar por email si está habilitado
-            if (preferences.email_enabled || user.email) {
+            if (user.email) {
                 await this.queueService.enqueueNotification(notification.id, 'email', {
                     to: user.email,
                     subject: notification.title,
@@ -225,7 +228,7 @@ class NotificationService {
                 });
             }
             // Enviar por push si está habilitado y hay ID de notificación
-            if (preferences.push_enabled || user.notificationid) {
+            if (user.notificationid) {
                 await this.queueService.enqueueNotification(notification.id, 'push', {
                     deviceToken: user.notificationid,
                     title: notification.title,

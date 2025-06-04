@@ -11,6 +11,7 @@ interface Config {
     port: number;
     host: string;
     apiPrefix: string;
+    production_url: string;
   };
   database: {
     host: string;
@@ -50,6 +51,7 @@ const config: Config = {
     port: parseInt(process.env.PORT || '3000', 10),
     host: process.env.HOST || 'localhost',
     apiPrefix: process.env.API_PREFIX || '/api',
+    production_url: process.env.PRODUCTION_URL || 'health.cuidame.tech'
   },
   database: {
     host: process.env.DB_HOST || 'localhost',

@@ -273,4 +273,36 @@ export class AuthController {
       next(error);
     }
   };
+
+  /**
+   * Cambiar contraseña de usuario
+   * @route PUT /api/auth/change-password
+   */
+  changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
+      const result = await this.authService.changePassword(userId, currentPassword, newPassword);
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
