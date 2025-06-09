@@ -315,15 +315,6 @@ export class AppointmentController {
       // Extraer filtros de la query
       const filters: any = {};
       
-      // Procesar filtros desde la query
-      if (req.query.professionalId) {
-        filters.professionalId = parseInt(req.query.professionalId as string);
-      }
-
-      if (req.query.patientId) {
-        filters.patientId = parseInt(req.query.patientId as string);
-      }
-
       if (req.query.appointmentTypeId) {
         filters.appointmentTypeId = parseInt(req.query.appointmentTypeId as string);
       }

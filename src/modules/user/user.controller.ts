@@ -140,7 +140,6 @@ export class UserController {
         data: updatedUser,
         timestamp: new Date().toISOString()
       };
-      console.log("🚀 ~ UserController ~ updateProfileComplete ~ response:", response)
       
       res.status(200).json(response);
     } catch (error) {

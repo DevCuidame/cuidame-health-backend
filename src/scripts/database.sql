@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS public.pacientes
 
 CREATE TABLE IF NOT EXISTS public.alergias
 (
-    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE,
     id bigint NOT NULL ,
     id_paciente bigint NOT NULL,
     tipo_alergia character varying(100),
@@ -185,7 +185,8 @@ CREATE TABLE IF NOT EXISTS public.condicion
     tatuajes_descripcion character varying(1000),
     created_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
-    CONSTRAINT condicion_pkey PRIMARY KEY (id)
+    CONSTRAINT condicion_pkey PRIMARY KEY (id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS public.vacunas
@@ -195,7 +196,8 @@ CREATE TABLE IF NOT EXISTS public.vacunas
     vacuna character varying(100),
     updated_at timestamp(0) without time zone NOT NULL,
     created_at timestamp(0) without time zone NOT NULL,
-    CONSTRAINT vacunas_pkey PRIMARY KEY (id)
+    CONSTRAINT vacunas_pkey PRIMARY KEY (id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS public.enfermedades
@@ -205,12 +207,13 @@ CREATE TABLE IF NOT EXISTS public.enfermedades
     enfermedad character varying(200),
     created_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL,
-    CONSTRAINT enfermedades_pkey PRIMARY KEY (id)
+    CONSTRAINT enfermedades_pkey PRIMARY KEY (id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS public.antecedentes_familiares
 (
-    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE,
     id bigint NOT NULL ,
     id_paciente bigint NOT NULL,
     tipo_antecedente character varying(50),
@@ -225,7 +228,7 @@ CREATE TABLE IF NOT EXISTS public.antecedentes_familiares
 
 CREATE TABLE IF NOT EXISTS public.antecedentes
 (
-    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id),
+    FOREIGN KEY (id_paciente) REFERENCES public.pacientes(id) ON DELETE CASCADE,
     id bigint NOT NULL ,
     id_paciente bigint NOT NULL,
     tipo_antecedente character varying(50),
@@ -252,14 +255,14 @@ ALTER TABLE IF EXISTS public.blood_glucose
     ADD CONSTRAINT fk_patient FOREIGN KEY (patient_id)
     REFERENCES public.pacientes (id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+    ON DELETE CASCADE;
 
 
 ALTER TABLE IF EXISTS public.blood_oxygen
     ADD CONSTRAINT fk_patient FOREIGN KEY (patient_id)
     REFERENCES public.pacientes (id) MATCH SIMPLE
     ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+    ON DELETE CASCADE;
 
 
 ALTER TABLE IF EXISTS public.blood_pressure
