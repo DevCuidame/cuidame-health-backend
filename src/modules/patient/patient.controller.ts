@@ -297,4 +297,33 @@ getPatientWithHealthData = async (req: Request, res: Response, next: NextFunctio
       next(error);
     }
   };
+
+
+  /**
+   * Obtener un paciente por código
+   * @route GET /api/patients/code/:code
+   */
+  getPatientByCode = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const code = req.params.code;
+      const userId = req.user?.id;
+      
+      if (!code) {
+        throw new BadRequestError('El código del paciente es requerido');
+      }
+      
+      const patient = await this.patientService.getPatientByCode(code, userId);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Paciente encontrado correctamente',
+        data: patient,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

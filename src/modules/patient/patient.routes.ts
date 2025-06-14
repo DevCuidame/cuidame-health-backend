@@ -8,6 +8,13 @@ const router = Router();
 const patientController = new PatientController();
 
 /**
+ * @route GET /api/patients/code/:code
+ * @desc Get patient by code
+ * @access Public
+ */
+router.get('/code/:code', patientController.getPatientByCode);
+
+/**
  * Routes that require authentication
  */
 router.use(authMiddleware);
@@ -40,6 +47,8 @@ router.get('/:id/health-data', patientController.getPatientWithHealthData);
  * @access Private
  */
 router.get('/search', patientController.searchPatients);
+
+
 
 /**
  * @route POST /api/patients

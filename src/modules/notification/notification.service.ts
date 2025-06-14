@@ -226,7 +226,7 @@ export class NotificationService {
       return await this.createNotification({
         user_id: userId,
         appointment_id: appointmentId,
-        type: template.type,
+        type: template!.type,
         title: subject,
         message: body,
         scheduled_for: scheduledFor

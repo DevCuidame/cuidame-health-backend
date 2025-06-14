@@ -6,6 +6,9 @@ import { Background, FamilyBackground, Vaccine } from '../../models/background.m
 import { Condition } from '../../models/condition.model';
 import { Disease } from '../../models/diseases.model';
 import { HeartRate, BloodPressure, BloodGlucose, BloodOxygen, RespiratoryRate } from '../../models/vitals.models';
+import { Appointment } from '../../models/appointment.model';
+import { ControlMedicine } from '../../models/control-medicine.model';
+import { QuestionnaireResponse } from '../../models/questionnaire.model';
 
 export class HealthDataRepository {
   private patientRepository = AppDataSource.getRepository(Patient);
@@ -20,6 +23,9 @@ export class HealthDataRepository {
   private bloodGlucoseRepository = AppDataSource.getRepository(BloodGlucose);
   private bloodOxygenRepository = AppDataSource.getRepository(BloodOxygen);
   private respiratoryRateRepository = AppDataSource.getRepository(RespiratoryRate);
+  private appointmentsRepository = AppDataSource.getRepository(Appointment);
+  private controlMedicineRepository = AppDataSource.getRepository(ControlMedicine);
+  private questionnaireResponseRepository = AppDataSource.getRepository(QuestionnaireResponse);
 
   /**
    * Obtiene los datos de salud de un paciente por su ID
@@ -44,6 +50,9 @@ export class HealthDataRepository {
       familyBackgrounds,
       vaccines,
       diseases,
+      appointments,
+      controlMedicines,
+      questionnaireResponses,
       heartRate,
       bloodPressure,
       bloodGlucose,
@@ -73,6 +82,26 @@ export class HealthDataRepository {
       this.diseasesRepository.find({
         where: { id_paciente: patientId },
         order: { created_at: 'DESC' }
+      }),
+      
+      // Citas médicas
+      this.appointmentsRepository.find({
+        where: { patient_id: patientId },
+        order: { start_time: 'DESC' },
+        relations: ['professional', 'appointmentType']
+      }),
+      
+      // Medicamentos controlados
+      this.controlMedicineRepository.find({
+        where: { id_patient: patientId },
+        order: { date_order: 'DESC' }
+      }),
+      
+      // Respuestas de cuestionarios
+      this.questionnaireResponseRepository.find({
+        where: { patient_id: patientId },
+        order: { completed_at: 'DESC' },
+        relations: ['questionnaire', 'responses', 'responses.question']
       }),
       
       // Signos vitales - obtener solo el más reciente para cada tipo
@@ -114,7 +143,10 @@ export class HealthDataRepository {
         familyBackgrounds,
         vaccines,
         diseases
-      }
+      },
+      appointments: appointments,
+      medications: controlMedicines,
+      questionnaire_responses: questionnaireResponses
     };
   }
 }

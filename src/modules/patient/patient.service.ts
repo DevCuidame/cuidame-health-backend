@@ -1,5 +1,5 @@
-import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
 import { PatientRepository } from './patient.repository';
+import { MedicalInfoRepository } from '../../modules/medical-info/medical-info.repository';
 import { HealthRepository } from '../../modules/health/health.repository';
 import { CreatePatientDto, UpdatePatientDto } from './patient.dto';
 import { Patient } from '../../models/patient.model';
@@ -609,5 +609,43 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
     }
 
     return { cityName, departmentName };
+  }
+
+  /**
+   * Obtener un paciente por su código
+   * @param code Código del paciente
+   * @param caregiverId ID del cuidador (opcional, para verificar permisos)
+   * @returns Paciente encontrado con toda su información
+   */
+  async getPatientByCode(
+    code: string,
+    caregiverId?: number
+  ): Promise<Patient> {
+    const patient = await this.patientRepository.findByCode(code);
+
+    if (!patient) {
+      throw new NotFoundError(`Paciente con código ${code} no encontrado`);
+    }
+
+    // Si se proporciona el ID del cuidador, verificar que tenga permisos
+    if (caregiverId && patient.a_cargo_id !== caregiverId) {
+      throw new ForbiddenError(
+        'No tienes permiso para acceder a este paciente'
+      );
+    }
+
+    // Obtener nombres reales de ciudad y departamento
+    const { cityName, departmentName } = await this.getLocationInfo(
+      patient.city_id
+    );
+
+    // Crear un objeto enriquecido para devolver al cliente
+    const enrichedPatient = {
+      ...patient,
+      ciudad: cityName || patient.ciudad,
+      department_name: departmentName || patient.departamento,
+    };
+
+    return enrichedPatient as Patient;
   }
 }

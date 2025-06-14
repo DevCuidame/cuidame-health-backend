@@ -2,12 +2,14 @@ import { AppDataSource } from '../../../core/config/database';
 import { Repository } from 'typeorm';
 import logger from '../../../utils/logger';
 import { NotFoundError } from '../../../utils/error-handler';
+import { NotificationType } from '../../../models/notification.model';
 
 // Interface para la plantilla de notificación
 export interface NotificationTemplate {
   id: number;
   code: string;
   name: string;
+  type: NotificationType; // Tipo de notificación
   subject: string;
   body: string;
   variables?: string; // JSON string con variables disponibles
@@ -32,6 +34,23 @@ export class NotificationTemplateService {
   }
 
   /**
+   * Obtener plantilla por ID
+   * @param id ID de la plantilla
+   * @returns Plantilla de notificación
+   */
+  async getTemplateById(id: number): Promise<NotificationTemplate | null> {
+    try {
+      const template = await this.templateRepository.findOne({
+        where: { id }
+      });
+      return template;
+    } catch (error) {
+      logger.error(`Error al obtener plantilla con ID ${id}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Obtener plantilla por código
    * @param code Código de la plantilla
    * @returns Plantilla de notificación
@@ -45,6 +64,23 @@ export class NotificationTemplateService {
     } catch (error) {
       logger.error(`Error al obtener plantilla con código ${code}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Obtener plantillas por tipo
+   * @param type Tipo de notificación
+   * @returns Lista de plantillas del tipo especificado
+   */
+  async getTemplatesByType(type: NotificationType): Promise<NotificationTemplate[]> {
+    try {
+      return await this.templateRepository.find({
+        where: { type, active: true },
+        order: { name: 'ASC' }
+      });
+    } catch (error) {
+      logger.error(`Error al obtener plantillas del tipo ${type}:`, error);
+      throw error;
     }
   }
 
@@ -146,6 +182,21 @@ export class NotificationTemplateService {
   }
 
   /**
+   * Obtener todas las plantillas
+   * @returns Lista de todas las plantillas
+   */
+  async getAllTemplates(): Promise<NotificationTemplate[]> {
+    try {
+      return await this.templateRepository.find({
+        order: { name: 'ASC' }
+      });
+    } catch (error) {
+      logger.error('Error al obtener todas las plantillas:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtener todas las plantillas activas
    * @returns Lista de plantillas activas
    */
@@ -157,6 +208,35 @@ export class NotificationTemplateService {
       });
     } catch (error) {
       logger.error('Error al obtener plantillas activas:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Eliminar plantilla
+   * @param id ID de la plantilla
+   * @returns Resultado de la operación
+   */
+  async deleteTemplate(id: number): Promise<{ success: boolean; message: string }> {
+    try {
+      const template = await this.templateRepository.findOne({ where: { id } });
+      
+      if (!template) {
+        return {
+          success: false,
+          message: `Plantilla con ID ${id} no encontrada`
+        };
+      }
+      
+      await this.templateRepository.delete(id);
+      
+      logger.info(`Plantilla eliminada con ID: ${id}`);
+      return {
+        success: true,
+        message: 'Plantilla eliminada correctamente'
+      };
+    } catch (error) {
+      logger.error(`Error al eliminar plantilla con ID ${id}:`, error);
       throw error;
     }
   }
