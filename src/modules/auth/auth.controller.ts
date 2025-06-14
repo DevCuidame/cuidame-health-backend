@@ -25,7 +25,6 @@ export class AuthController {
         data: result.data,
         timestamp: new Date().toISOString()
       };
-      console.log("🚀 ~ AuthController ~ login= ~ response:", response)
       
       res.status(200).json(response);
     } catch (error) {
