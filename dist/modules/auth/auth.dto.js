@@ -9,11 +9,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DeleteAccountDto = exports.VerifyPasswordDto = exports.RefreshTokenDto = exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.RegisterDto = exports.LoginDto = void 0;
+exports.ChangePasswordDto = exports.DeleteAccountDto = exports.VerifyPasswordDto = exports.RefreshTokenDto = exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.RegisterDto = exports.LoginDto = void 0;
 const class_validator_1 = require("class-validator");
 class LoginDto {
     email;
     password;
+    deviceName;
+    deviceType;
 }
 exports.LoginDto = LoginDto;
 __decorate([
@@ -26,6 +28,16 @@ __decorate([
     (0, class_validator_1.MinLength)(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'El nombre del dispositivo debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], LoginDto.prototype, "deviceName", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'El tipo de dispositivo debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], LoginDto.prototype, "deviceType", void 0);
 class RegisterDto {
     name;
     lastname;
@@ -181,3 +193,19 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'La confirmación debe ser una cadena de texto' }),
     __metadata("design:type", String)
 ], DeleteAccountDto.prototype, "confirmation", void 0);
+class ChangePasswordDto {
+    currentPassword;
+    newPassword;
+}
+exports.ChangePasswordDto = ChangePasswordDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'La contraseña actual es requerida' }),
+    (0, class_validator_1.IsString)({ message: 'La contraseña actual debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "currentPassword", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'La nueva contraseña es requerida' }),
+    (0, class_validator_1.MinLength)(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' }),
+    (0, class_validator_1.IsString)({ message: 'La nueva contraseña debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "newPassword", void 0);

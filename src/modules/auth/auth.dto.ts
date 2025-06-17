@@ -8,6 +8,14 @@ export class LoginDto {
   @IsNotEmpty({ message: 'La contraseña es requerida' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password!: string;
+
+  @IsOptional()
+  @IsString({ message: 'El nombre del dispositivo debe ser una cadena de texto' })
+  deviceName?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El tipo de dispositivo debe ser una cadena de texto' })
+  deviceType?: string;
 }
 
 export class RegisterDto {

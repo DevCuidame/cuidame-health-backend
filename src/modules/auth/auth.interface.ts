@@ -106,3 +106,58 @@ export interface IChangePasswordData {
   currentPassword: string;
   newPassword: string;
 }
+
+/**
+ * Interfaz para información de dispositivo
+ */
+export interface IDeviceInfo {
+  deviceType?: string;
+  deviceName?: string;
+  browser?: string;
+  os?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/**
+ * Interfaz para datos de sesión
+ */
+export interface ISessionData {
+  userId: number;
+  deviceInfo?: IDeviceInfo;
+  expiresIn?: string;
+  refreshExpiresIn?: string;
+}
+
+/**
+ * Interfaz para respuesta de sesión
+ */
+export interface ISessionResponse {
+  sessionId: number;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+  refreshExpiresAt: Date;
+  deviceInfo?: string;
+}
+
+/**
+ * Interfaz para logout selectivo
+ */
+export interface ILogoutSessionData {
+  sessionId?: number;
+  accessToken?: string;
+  logoutAll?: boolean;
+}
+
+/**
+ * Interfaz para listar sesiones activas
+ */
+export interface IActiveSession {
+  sessionId: number;
+  deviceInfo?: string;
+  ipAddress?: string;
+  lastUsedAt?: Date;
+  createdAt: Date;
+  isCurrent: boolean;
+}

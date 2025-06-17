@@ -213,5 +213,44 @@ class AppointmentController {
             next(error);
         }
     };
+    /**
+     * Buscar citas con filtros
+     * @route GET /api/appointments/search
+     */
+    searchAppointments = async (req, res, next) => {
+        try {
+            const searchTerm = req.query.search;
+            // Extraer filtros de la query
+            const filters = {};
+            if (req.query.appointmentTypeId) {
+                filters.appointmentTypeId = parseInt(req.query.appointmentTypeId);
+            }
+            if (req.query.status) {
+                // Si es un array de estados
+                if (Array.isArray(req.query.status)) {
+                    filters.status = req.query.status;
+                }
+                else {
+                    filters.status = req.query.status;
+                }
+            }
+            if (req.query.startDate) {
+                filters.startDate = new Date(req.query.startDate);
+            }
+            if (req.query.endDate) {
+                filters.endDate = new Date(req.query.endDate);
+            }
+            const appointments = await this.appointmentService.searchAppointments(searchTerm, filters);
+            const response = {
+                success: true,
+                data: appointments,
+                timestamp: new Date().toISOString(),
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            next(error);
+        }
+    };
 }
 exports.AppointmentController = AppointmentController;

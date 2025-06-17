@@ -28,5 +28,14 @@ class ChatSessionRepository extends base_repository_1.BaseRepository {
             order: { created_at: 'DESC' }
         });
     }
+    /**
+     * Delete all chat sessions for a patient
+     * @param patientId ID of the patient
+     * @returns True if successful
+     */
+    async deleteByPatientId(patientId) {
+        const result = await this.repository.delete({ patient_id: patientId });
+        return result.affected !== undefined && result.affected !== null && result.affected > 0;
+    }
 }
 exports.ChatSessionRepository = ChatSessionRepository;

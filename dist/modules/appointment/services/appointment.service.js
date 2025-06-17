@@ -8,6 +8,7 @@ const health_professional_service_1 = require("./health-professional.service");
 const appointment_type_service_1 = require("./appointment-type.service");
 const patient_service_1 = require("../../patient/patient.service");
 const error_handler_1 = require("../../../utils/error-handler");
+const typeorm_1 = require("typeorm");
 class AppointmentService {
     appointmentRepository;
     healthProfessionalService;
@@ -65,6 +66,79 @@ class AppointmentService {
         // Verificar que el profesional existe
         await this.healthProfessionalService.getProfessionalById(professionalId);
         return await this.appointmentRepository.findByProfessional(professionalId);
+    }
+    /**
+     * Buscar citas con filtros
+     * @param searchTerm Término de búsqueda
+     * @param filters Filtros adicionales (especialidad, estado, etc.)
+     * @returns Lista de citas que coinciden con los criterios de búsqueda
+     */
+    async searchAppointments(searchTerm, filters) {
+        const whereOptions = {};
+        // Aplicar filtros específicos si existen
+        if (filters) {
+            // Filtrar por profesional
+            if (filters.professionalId) {
+                whereOptions.professional_id = filters.professionalId;
+            }
+            // Filtrar por paciente
+            if (filters.patientId) {
+                whereOptions.patient_id = filters.patientId;
+            }
+            // Filtrar por tipo de cita
+            if (filters.appointmentTypeId) {
+                whereOptions.appointment_type_id = filters.appointmentTypeId;
+            }
+            // Filtrar por estado
+            if (filters.status) {
+                whereOptions.status = Array.isArray(filters.status)
+                    ? (0, typeorm_1.In)(filters.status)
+                    : filters.status;
+            }
+            // Filtrar por rango de fechas
+            if (filters.startDate && filters.endDate) {
+                whereOptions.start_time = (0, typeorm_1.Between)(filters.startDate, filters.endDate);
+            }
+            else if (filters.startDate) {
+                whereOptions.start_time = (0, typeorm_1.MoreThanOrEqual)(filters.startDate);
+            }
+            else if (filters.endDate) {
+                whereOptions.start_time = (0, typeorm_1.LessThanOrEqual)(filters.endDate);
+            }
+        }
+        // Buscar por término en campos relevantes si se proporciona
+        if (searchTerm && searchTerm.trim()) {
+            const trimmedSearchTerm = searchTerm.trim();
+            // Utilizamos una consulta personalizada para buscar en múltiples campos
+            return await this.appointmentRepository.findAll({
+                where: [
+                    { notes: (0, typeorm_1.ILike)(`%${trimmedSearchTerm}%`) },
+                    { location: (0, typeorm_1.ILike)(`%${trimmedSearchTerm}%`) },
+                    { status: (0, typeorm_1.In)(Object.values(appointment_model_1.AppointmentStatus).filter(status => status.toLowerCase().includes(trimmedSearchTerm.toLowerCase()))) }
+                    // No podemos buscar directamente en campos de relaciones aquí
+                    // Para eso necesitaríamos usar queryBuilder
+                ],
+                relations: [
+                    'patient',
+                    'professional',
+                    'professional.user',
+                    'appointmentType',
+                    'specialty'
+                ],
+                order: { start_time: 'DESC' }
+            });
+        }
+        return await this.appointmentRepository.findAll({
+            where: whereOptions,
+            relations: [
+                'patient',
+                'professional',
+                'professional.user',
+                'appointmentType',
+                'specialty'
+            ],
+            order: { start_time: 'DESC' }
+        });
     }
     /**
      * Crear una nueva cita

@@ -8,7 +8,12 @@ import {
   RefreshTokenPayload,
   IRefreshTokenData,
   IAccountDeletionInfo,
-  IDeleteAccountData
+  IDeleteAccountData,
+  IDeviceInfo,
+  ISessionData,
+  ISessionResponse,
+  ILogoutSessionData,
+  IActiveSession
 } from '../auth/auth.interface';
 import {
   BadRequestError,
@@ -20,6 +25,7 @@ import logger from '../../utils/logger';
 import { PasswordService } from '../../utils/password.util';
 import { PatientRepository } from '../patient/patient.repository';
 import { UserRepository } from '../user/user.repository';
+import { UserSessionRepository } from './user-session.repository';
 import { User } from '@models/user.model';
 
 import { HealthRepository } from '../../modules/health/health.repository';
@@ -36,6 +42,7 @@ import { TemplateFileService } from '../notification/services/template-file.serv
 
 export class AuthService {
   private userRepository: UserRepository;
+  private userSessionRepository: UserSessionRepository;
   private patientRepository: PatientRepository;
   private healthRepository: HealthRepository;
   private medicalInfoRepository: MedicalInfoRepository;
@@ -46,6 +53,7 @@ export class AuthService {
 
   constructor() {
     this.userRepository = new UserRepository();
+    this.userSessionRepository = new UserSessionRepository();
     this.patientRepository = new PatientRepository(); 
     this.healthRepository = new HealthRepository();
     this.medicalInfoRepository = new MedicalInfoRepository();
@@ -61,7 +69,7 @@ export class AuthService {
    * @returns Respuesta de autenticación con token y datos de usuario
    */
 
-async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
+async login(credentials: ILoginCredentials, deviceInfo?: IDeviceInfo): Promise<IAuthResponse> {
   const { email, password } = credentials;
 
   const normalizedEmail = email.toLowerCase();
@@ -88,35 +96,25 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     throw new UnauthorizedError('Credenciales inválidas');
   }
 
-  // Si la verificación fue exitosa, verificar si necesitamos actualizar el hash
-  // if (PasswordService.needsUpgrade(user.password)) {
-  //   // Migrar la contraseña al nuevo formato de manera silenciosa
-  //   const newHash = PasswordService.hashPassword(password);
-  //   await this.userRepository.update(
-  //     user.id,
-  //     {
-  //       password: newHash,
-  //       updated_at: new Date(),
-  //     },
-  //     'Usuario'
-  //   );
-  // }
-
- 
-
   let message = 'Sesión iniciada exitosamente';
   if (!user.verificado) {
     message = 'emailnoverificado';
   }
 
-  // Generar token JWT
-  const token = await this.generateToken(user);
-  
-  // Generar refresh token
-  const refreshToken = this.generateRefreshToken(user);
+  // Limpiar sesiones inactivas automáticamente en cada login
+  try {
+    const cleanupResult = await this.userSessionRepository.cleanInactiveSessionsAutomatically();
+    logger.info(`Limpieza automática de sesiones: ${cleanupResult.expired} expiradas, ${cleanupResult.inactive} inactivas, ${cleanupResult.unused} no usadas eliminadas`);
+  } catch (error) {
+    logger.error('Error en limpieza automática de sesiones:', error);
+    // No interrumpir el login si falla la limpieza
+  }
 
-  // Actualizar token de sesión en la base de datos
-  await this.userRepository.updateSessionToken(user.id, token);
+  // Limitar número de sesiones activas por usuario ANTES de crear la nueva (máximo 5)
+  await this.userSessionRepository.limitUserSessions(user.id, 4);
+
+  // Crear nueva sesión
+  const sessionResponse = await this.createUserSession(user.id, deviceInfo);
 
   // Obtener el conteo de pacientes a cargo
   const patientCount = await this.patientRepository.count({
@@ -216,8 +214,9 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       path: user.path,
       role: roleName, 
     },
-    access_token: token,
-    refresh_token: refreshToken,
+    access_token: sessionResponse.accessToken,
+    refresh_token: sessionResponse.refreshToken,
+    session_id: sessionResponse.sessionId,
     patientCount: patientCount,
     cared_persons: cared_persons,
   };
@@ -236,8 +235,8 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     success: true,
     message,
     data: userData,
-    token,
-    refresh_token: refreshToken
+    token: sessionResponse.accessToken,
+    refresh_token: sessionResponse.refreshToken
   };
 }
 
@@ -250,7 +249,21 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
     const { refresh_token } = refreshTokenData;
     
     try {
-      // Verificar refresh token
+      // Buscar sesión por refresh token
+      const session = await this.userSessionRepository.findByRefreshToken(refresh_token);
+      
+      if (!session) {
+        throw new UnauthorizedError('Refresh token inválido o expirado');
+      }
+      
+      // Verificar que la sesión no haya expirado
+      if (session.refresh_expires_at < new Date()) {
+        // Desactivar sesión expirada
+        await this.userSessionRepository.deactivateSession(session.id);
+        throw new UnauthorizedError('Refresh token expirado');
+      }
+      
+      // Verificar refresh token JWT
       const decoded = jwt.verify(refresh_token, config.jwt.secret) as RefreshTokenPayload;
       
       // Validar que sea un refresh token
@@ -258,26 +271,33 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
         throw new UnauthorizedError('Token inválido');
       }
       
-      // Buscar usuario
-      const user = await this.userRepository.findById(decoded.id);
+      // Generar nuevos tokens
+      const newAccessToken = await this.generateToken(session.user);
+      const newRefreshToken = this.generateRefreshToken(session.user);
       
-      if (!user) {
-        throw new UnauthorizedError('Usuario no encontrado');
-      }
+      // Calcular nuevas fechas de expiración
+      const expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + parseInt(config.jwt.expiresIn));
       
-      // Generar nuevo token de acceso
-      const newAccessToken = await this.generateToken(user);
+      const refreshExpiresAt = new Date();
+      refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 30); // 30 días
       
-      // Generar nuevo refresh token (opcional, para implementar rotación de tokens)
-      const newRefreshToken = this.generateRefreshToken(user);
+      // Actualizar tokens en la sesión
+      await this.userSessionRepository.updateTokens(
+        session.id,
+        newAccessToken,
+        newRefreshToken,
+        expiresAt,
+        refreshExpiresAt
+      );
       
-      // Actualizar token de sesión en la base de datos (opcional)
-      await this.userRepository.updateSessionToken(user.id, newAccessToken);
+      // Actualizar última vez usado
+      await this.userSessionRepository.updateLastUsed(session.id);
       
       // Obtener el rol del usuario para incluirlo en la respuesta
       const userRoleRepository = AppDataSource.getRepository(UserRole);
       const userRole = await userRoleRepository.findOne({
-        where: { user_id: user.id },
+        where: { user_id: session.user.id },
         relations: ['role']
       });
       const roleName = userRole?.role?.name || 'User';
@@ -288,7 +308,8 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
         data: {
           access_token: newAccessToken,
           refresh_token: newRefreshToken,
-          role: roleName // Incluir el rol del usuario en la respuesta
+          session_id: session.id,
+          role: roleName
         },
         token: newAccessToken,
         refresh_token: newRefreshToken
@@ -660,12 +681,12 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
    * @returns Respuesta de autenticación
    */
   async logout(userId: number): Promise<IAuthResponse> {
-    // Limpiar token de sesión
-    await this.userRepository.updateSessionToken(userId, null);
+    // Desactivar todas las sesiones del usuario
+    await this.userSessionRepository.deactivateAllUserSessions(userId);
 
     return {
       success: true,
-      message: 'Sesión cerrada correctamente',
+      message: 'Todas las sesiones cerradas correctamente',
     };
   }
 
@@ -801,5 +822,164 @@ async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
       success: true,
       message: 'Cuenta eliminada correctamente',
     };
+  }
+
+  /**
+   * Crear una nueva sesión de usuario
+   * @param userId ID del usuario
+   * @param deviceInfo Información del dispositivo
+   * @returns Datos de la sesión creada
+   */
+  async createUserSession(userId: number, deviceInfo?: IDeviceInfo): Promise<ISessionResponse> {
+    // Generar tokens
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError(`Usuario con ID ${userId} no encontrado`);
+    }
+
+    // Generar token JWT
+    const accessToken = await this.generateToken(user);
+    
+    // Generar refresh token
+    const refreshToken = this.generateRefreshToken(user);
+
+    // Calcular fechas de expiración
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + parseInt(config.jwt.expiresIn));
+    
+    const refreshExpiresAt = new Date();
+    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 30); // 30 días
+
+    // Formatear información del dispositivo
+    let deviceInfoStr = null;
+    if (deviceInfo) {
+      deviceInfoStr = JSON.stringify(deviceInfo);
+    }
+
+    // Crear nueva sesión
+    const session = await this.userSessionRepository.createSession({
+      user_id: userId,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
+      refresh_expires_at: refreshExpiresAt,
+      device_info: deviceInfoStr || undefined,
+      device_name: deviceInfo?.deviceName,
+      device_type: deviceInfo?.deviceType,
+      ip_address: deviceInfo?.ipAddress,
+      user_agent: deviceInfo?.userAgent,
+      last_used_at: new Date(),
+      is_active: true
+    });
+
+    return {
+      sessionId: session.id,
+      accessToken,
+      refreshToken,
+      expiresAt,
+      refreshExpiresAt,
+      deviceInfo: deviceInfoStr || undefined
+    };
+  }
+
+  /**
+   * Obtener todas las sesiones activas de un usuario
+   * @param userId ID del usuario
+   * @param currentSessionId ID de la sesión actual
+   * @returns Lista de sesiones activas
+   */
+  async getActiveSessions(userId: number, currentSessionId?: number): Promise<IActiveSession[]> {
+    const sessions = await this.userSessionRepository.findActiveSessionsByUserId(userId);
+    
+    return sessions.map((session: any) => {
+      let deviceInfo = null;
+      try {
+        if (session.device_info) {
+          deviceInfo = JSON.parse(session.device_info);
+        }
+      } catch (error) {
+        logger.error('Error al parsear información del dispositivo', error);
+      }
+
+      return {
+        sessionId: session.id,
+        deviceInfo: deviceInfo ? `${deviceInfo.browser || 'Desconocido'} en ${deviceInfo.os || 'Dispositivo desconocido'}` : 'Sesión desconocida',
+        ipAddress: session.ip_address,
+        lastUsedAt: session.last_used_at,
+        createdAt: session.created_at,
+        isCurrent: currentSessionId ? session.id === currentSessionId : false
+      };
+    });
+  }
+
+  /**
+   * Cerrar sesión específica o todas las sesiones
+   * @param logoutData Datos para cerrar sesión
+   * @returns Respuesta de autenticación
+   */
+  async logoutSession(logoutData: ILogoutSessionData): Promise<IAuthResponse> {
+    const { sessionId, accessToken, logoutAll } = logoutData;
+    
+    if (logoutAll) {
+      // Si se solicita cerrar todas las sesiones, necesitamos el ID de usuario
+      if (!accessToken && !sessionId) {
+        throw new BadRequestError('Se requiere un token de acceso o ID de sesión para cerrar todas las sesiones');
+      }
+      
+      let userId: number;
+      
+      if (sessionId) {
+        // Obtener sesión por ID
+        const session = await this.userSessionRepository.findById(sessionId);
+        if (!session) {
+          throw new NotFoundError(`Sesión con ID ${sessionId} no encontrada`);
+        }
+        userId = session.user_id;
+      } else {
+        // Obtener sesión por token de acceso
+        const session = await this.userSessionRepository.findByAccessToken(accessToken!);
+        if (!session) {
+          throw new UnauthorizedError('Token de acceso inválido');
+        }
+        userId = session.user_id;
+      }
+      
+      // Desactivar todas las sesiones del usuario
+      await this.userSessionRepository.deactivateAllUserSessions(userId);
+      
+      return {
+        success: true,
+        message: 'Todas las sesiones han sido cerradas correctamente'
+      };
+    } else if (sessionId) {
+      // Cerrar sesión específica por ID
+      await this.userSessionRepository.deactivateSession(sessionId);
+      
+      return {
+        success: true,
+        message: 'Sesión cerrada correctamente'
+      };
+    } else if (accessToken) {
+      // Cerrar sesión específica por token de acceso
+      await this.userSessionRepository.deactivateByAccessToken(accessToken);
+      
+      return {
+        success: true,
+        message: 'Sesión cerrada correctamente'
+      };
+    } else {
+      throw new BadRequestError('Se requiere un ID de sesión o token de acceso para cerrar sesión');
+    }
+  }
+
+  /**
+   * Limpiar sesiones expiradas y antiguas
+   * @returns Número de sesiones limpiadas
+   */
+  async cleanupSessions(): Promise<{ expired: number, inactive: number }> {
+    const expired = await this.userSessionRepository.cleanExpiredSessions();
+    const inactive = await this.userSessionRepository.cleanInactiveSessions(30); // Limpiar sesiones inactivas de más de 30 días
+    
+    return { expired, inactive };
   }
 }

@@ -40,12 +40,16 @@ __decorate([
 ], CreateUserDto.prototype, "lastname", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'El tipo de identificación es requerido' }),
-    (0, class_validator_1.IsString)({ message: 'El tipo de identificación debe ser una cadena de texto' }),
+    (0, class_validator_1.IsString)({
+        message: 'El tipo de identificación debe ser una cadena de texto',
+    }),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "typeid", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'El número de identificación es requerido' }),
-    (0, class_validator_1.IsString)({ message: 'El número de identificación debe ser una cadena de texto' }),
+    (0, class_validator_1.IsString)({
+        message: 'El número de identificación debe ser una cadena de texto',
+    }),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "numberid", void 0);
 __decorate([
@@ -61,7 +65,9 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'El teléfono es requerido' }),
     (0, class_validator_1.IsString)({ message: 'El teléfono debe ser una cadena de texto' }),
-    (0, class_validator_1.Matches)(/^\d{7,15}$/, { message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos' }),
+    (0, class_validator_1.Matches)(/^\d{7,15}$/, {
+        message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos',
+    }),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "phone", void 0);
 __decorate([
@@ -95,14 +101,21 @@ __decorate([
 ], CreateUserDto.prototype, "imagebs64", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsBoolean)({ message: 'El estado de verificación debe ser un valor booleano' }),
+    (0, class_validator_1.IsBoolean)({
+        message: 'El estado de verificación debe ser un valor booleano',
+    }),
     __metadata("design:type", Boolean)
 ], CreateUserDto.prototype, "verificado", void 0);
 class UpdateUserDto {
+    id;
     name;
     lastname;
+    typeid;
+    numberid;
     phone;
     address;
+    gender;
+    birth_date;
     city_id;
     pubname;
     privname;
@@ -110,6 +123,11 @@ class UpdateUserDto {
     path;
 }
 exports.UpdateUserDto = UpdateUserDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)({}, { message: 'El id debe ser una número' }),
+    __metadata("design:type", Number)
+], UpdateUserDto.prototype, "id", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: 'El nombre debe ser una cadena de texto' }),
@@ -121,9 +139,25 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "lastname", void 0);
 __decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'El tipo de identificación es requerido' }),
+    (0, class_validator_1.IsString)({
+        message: 'El tipo de identificación debe ser una cadena de texto',
+    }),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "typeid", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)({ message: 'El número de identificación es requerido' }),
+    (0, class_validator_1.IsString)({
+        message: 'El número de identificación debe ser una cadena de texto',
+    }),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "numberid", void 0);
+__decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: 'El teléfono debe ser una cadena de texto' }),
-    (0, class_validator_1.Matches)(/^\d{7,15}$/, { message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos' }),
+    (0, class_validator_1.Matches)(/^\d{7,15}$/, {
+        message: 'El teléfono debe contener entre 7 y 15 dígitos numéricos',
+    }),
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "phone", void 0);
 __decorate([
@@ -131,6 +165,16 @@ __decorate([
     (0, class_validator_1.IsString)({ message: 'La dirección debe ser una cadena de texto' }),
     __metadata("design:type", String)
 ], UpdateUserDto.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'El género debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "gender", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: 'La fecha de nacimiento debe ser una cadena de texto' }),
+    __metadata("design:type", String)
+], UpdateUserDto.prototype, "birth_date", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)({}, { message: 'El ID de la ciudad debe ser un número' }),
@@ -168,11 +212,17 @@ __decorate([
 ], UpdatePasswordDto.prototype, "currentPassword", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'La nueva contraseña es requerida' }),
-    (0, class_validator_1.MinLength)(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres' }),
+    (0, class_validator_1.MinLength)(6, {
+        message: 'La nueva contraseña debe tener al menos 6 caracteres',
+    }),
     __metadata("design:type", String)
 ], UpdatePasswordDto.prototype, "newPassword", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)({ message: 'La confirmación de la nueva contraseña es requerida' }),
-    (0, class_validator_1.MinLength)(6, { message: 'La confirmación de la nueva contraseña debe tener al menos 6 caracteres' }),
+    (0, class_validator_1.IsNotEmpty)({
+        message: 'La confirmación de la nueva contraseña es requerida',
+    }),
+    (0, class_validator_1.MinLength)(6, {
+        message: 'La confirmación de la nueva contraseña debe tener al menos 6 caracteres',
+    }),
     __metadata("design:type", String)
 ], UpdatePasswordDto.prototype, "confirmPassword", void 0);

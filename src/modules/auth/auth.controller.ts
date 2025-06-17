@@ -17,7 +17,18 @@ export class AuthController {
   login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const credentials: LoginDto = req.body;
-      const result = await this.authService.login(credentials);
+      
+      // Extraer información del dispositivo del request
+      const deviceInfo = {
+        deviceName: req.body.deviceName || 'Dispositivo desconocido',
+        deviceType: req.body.deviceType || 'unknown',
+        ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+        userAgent: req.get('User-Agent') || 'unknown'
+      };
+
+      
+      
+      const result = await this.authService.login(credentials, deviceInfo);
       
       const response: ApiResponse = {
         success: result.success,
@@ -297,6 +308,97 @@ export class AuthController {
       const response: ApiResponse = {
         success: result.success,
         message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Obtener sesiones activas del usuario
+   * @route GET /api/auth/sessions
+   */
+  getActiveSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'No autorizado',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+      
+      const sessions = await this.authService.getActiveSessions(userId);
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Sesiones activas obtenidas correctamente',
+        data: sessions,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Cerrar sesión específica o todas las sesiones
+   * @route POST /api/auth/logout-session
+   */
+  logoutSession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { sessionId, logoutAll } = req.body;
+      const accessToken = req.headers.authorization?.replace('Bearer ', '');
+      
+      if (!accessToken) {
+        res.status(401).json({
+          success: false,
+          message: 'Token de acceso requerido',
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+      
+      const logoutData = {
+        sessionId,
+        accessToken,
+        logoutAll: logoutAll || false
+      };
+      
+      const result = await this.authService.logoutSession(logoutData);
+      
+      const response: ApiResponse = {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Limpiar sesiones expiradas
+   * @route POST /api/auth/cleanup-sessions
+   */
+  cleanupSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.authService.cleanupSessions();
+      
+      const response: ApiResponse = {
+        success: true,
+        message: `Limpieza completada: ${result.expired} sesiones expiradas y ${result.inactive} sesiones inactivas eliminadas`,
+        data: result,
         timestamp: new Date().toISOString()
       };
       

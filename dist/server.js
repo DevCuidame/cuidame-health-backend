@@ -9,6 +9,7 @@ const logger_1 = __importDefault(require("./utils/logger"));
 const chat_socket_service_1 = require("./modules/chat/websocket/chat-socket.service");
 const http_1 = __importDefault(require("http"));
 const appointment_socket_service_1 = require("./modules/appointment/websocket/appointment-socket.service");
+const session_cleanup_service_1 = require("./utils/session-cleanup.service");
 // import expressWs from 'express-ws';
 // Establecer puerto
 const PORT = environment_1.default.server.port;
@@ -52,6 +53,14 @@ server.listen(PORT, () => {
     logger_1.default.info(`📚 API disponible en http://${HOST}:${PORT}${environment_1.default.server.apiPrefix}`);
     logger_1.default.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
     logger_1.default.info(`🌍 Entorno: ${environment_1.default.env}`);
+    // Inicializar servicio de limpieza automática de sesiones
+    try {
+        (0, session_cleanup_service_1.initializeSessionCleanup)(24); // Ejecutar cada 24 horas
+        logger_1.default.info('🧹 Servicio de limpieza automática de sesiones iniciado');
+    }
+    catch (error) {
+        logger_1.default.error('❌ Error al inicializar servicio de limpieza de sesiones:', error);
+    }
 });
 // Manejar errores del servidor
 server.on('error', (error) => {
@@ -74,6 +83,15 @@ process.on('SIGINT', () => {
 });
 // Función para cerrar graciosamente
 const shutdown = () => {
+    logger_1.default.info('Iniciando cierre gracioso del servidor...');
+    // Detener servicio de limpieza de sesiones
+    try {
+        (0, session_cleanup_service_1.stopSessionCleanup)();
+        logger_1.default.info('🧹 Servicio de limpieza de sesiones detenido');
+    }
+    catch (error) {
+        logger_1.default.error('❌ Error al detener servicio de limpieza:', error);
+    }
     server.close(() => {
         logger_1.default.info('Servidor HTTP cerrado');
         process.exit(0);

@@ -9,6 +9,9 @@ const background_model_1 = require("../../models/background.model");
 const condition_model_1 = require("../../models/condition.model");
 const diseases_model_1 = require("../../models/diseases.model");
 const vitals_models_1 = require("../../models/vitals.models");
+const appointment_model_1 = require("../../models/appointment.model");
+const control_medicine_model_1 = require("../../models/control-medicine.model");
+const questionnaire_model_1 = require("../../models/questionnaire.model");
 class HealthDataRepository {
     patientRepository = database_1.AppDataSource.getRepository(patient_model_1.Patient);
     allergiesRepository = database_1.AppDataSource.getRepository(allergy_model_1.Allergy);
@@ -22,6 +25,9 @@ class HealthDataRepository {
     bloodGlucoseRepository = database_1.AppDataSource.getRepository(vitals_models_1.BloodGlucose);
     bloodOxygenRepository = database_1.AppDataSource.getRepository(vitals_models_1.BloodOxygen);
     respiratoryRateRepository = database_1.AppDataSource.getRepository(vitals_models_1.RespiratoryRate);
+    appointmentsRepository = database_1.AppDataSource.getRepository(appointment_model_1.Appointment);
+    controlMedicineRepository = database_1.AppDataSource.getRepository(control_medicine_model_1.ControlMedicine);
+    questionnaireResponseRepository = database_1.AppDataSource.getRepository(questionnaire_model_1.QuestionnaireResponse);
     /**
      * Obtiene los datos de salud de un paciente por su ID
      * @param patientId ID del paciente
@@ -36,7 +42,7 @@ class HealthDataRepository {
             return null;
         }
         // Obtener todos los datos de salud en paralelo para mejor rendimiento
-        const [allergies, condition, backgrounds, familyBackgrounds, vaccines, diseases, heartRate, bloodPressure, bloodGlucose, bloodOxygen, respiratoryRate] = await Promise.all([
+        const [allergies, condition, backgrounds, familyBackgrounds, vaccines, diseases, appointments, heartRate, bloodPressure, bloodGlucose, bloodOxygen, respiratoryRate] = await Promise.all([
             // Información médica
             this.allergiesRepository.find({
                 where: { id_paciente: patientId },
@@ -61,6 +67,23 @@ class HealthDataRepository {
                 where: { id_paciente: patientId },
                 order: { created_at: 'DESC' }
             }),
+            // Citas médicas
+            this.appointmentsRepository.find({
+                where: { patient_id: patientId },
+                order: { start_time: 'DESC' },
+                relations: ['professional', 'appointmentType']
+            }),
+            // // Medicamentos controlados
+            // this.controlMedicineRepository.find({
+            //   where: { id_patient: patientId },
+            //   order: { date_order: 'DESC' }
+            // }),
+            // Respuestas de cuestionarios
+            // this.questionnaireResponseRepository.find({
+            //   where: { patient_id: patientId },
+            //   order: { completed_at: 'DESC' },
+            //   relations: ['questionnaire', 'responses', 'responses.question']
+            // }),
             // Signos vitales - obtener solo el más reciente para cada tipo
             this.heartRateRepository.findOne({
                 where: { patient_id: patientId },
@@ -99,7 +122,10 @@ class HealthDataRepository {
                 familyBackgrounds,
                 vaccines,
                 diseases
-            }
+            },
+            appointments: appointments,
+            // medications: controlMedicines,
+            // questionnaire_responses: questionnaireResponses
         };
     }
 }

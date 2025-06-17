@@ -15,6 +15,13 @@ const patientController = new PatientController();
 router.get('/code/:code', patientController.getPatientByCode);
 
 /**
+ * @route POST /api/patients/code/:code
+ * @desc Get patient by code with location data
+ * @access Public
+ */
+router.post('/code/:code', patientController.getPatientByCodeWithLocation);
+
+/**
  * Routes that require authentication
  */
 router.use(authMiddleware);

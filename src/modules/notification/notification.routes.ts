@@ -4,6 +4,7 @@ import { NotificationController } from './notification.controller';
 import { NotificationTemplateController } from './controllers/notification-template.controller';
 import { NotificationPreferenceController } from './controllers/notification-preference.controller';
 import { authMiddleware, restrictTo } from '../../middlewares/auth.middleware';
+import twilioRoutes from './routes/twilio.routes';
 
 const router = Router();
 const notificationController = new NotificationController();
@@ -70,6 +71,9 @@ router.put('/preferences/:type', preferenceController.updatePreference);
  * @access Private
  */
 router.post('/preferences/initialize', preferenceController.initializePreferences);
+
+// Rutas de Twilio (SMS, WhatsApp, notificaciones multicanal)
+router.use('/', twilioRoutes);
 
 // Rutas para administradores
 const adminRouter = Router();

@@ -51,8 +51,6 @@ export class HealthDataRepository {
       vaccines,
       diseases,
       appointments,
-      controlMedicines,
-      questionnaireResponses,
       heartRate,
       bloodPressure,
       bloodGlucose,
@@ -91,18 +89,18 @@ export class HealthDataRepository {
         relations: ['professional', 'appointmentType']
       }),
       
-      // Medicamentos controlados
-      this.controlMedicineRepository.find({
-        where: { id_patient: patientId },
-        order: { date_order: 'DESC' }
-      }),
+      // // Medicamentos controlados
+      // this.controlMedicineRepository.find({
+      //   where: { id_patient: patientId },
+      //   order: { date_order: 'DESC' }
+      // }),
       
       // Respuestas de cuestionarios
-      this.questionnaireResponseRepository.find({
-        where: { patient_id: patientId },
-        order: { completed_at: 'DESC' },
-        relations: ['questionnaire', 'responses', 'responses.question']
-      }),
+      // this.questionnaireResponseRepository.find({
+      //   where: { patient_id: patientId },
+      //   order: { completed_at: 'DESC' },
+      //   relations: ['questionnaire', 'responses', 'responses.question']
+      // }),
       
       // Signos vitales - obtener solo el más reciente para cada tipo
       this.heartRateRepository.findOne({
@@ -145,8 +143,8 @@ export class HealthDataRepository {
         diseases
       },
       appointments: appointments,
-      medications: controlMedicines,
-      questionnaire_responses: questionnaireResponses
+      // medications: controlMedicines,
+      // questionnaire_responses: questionnaireResponses
     };
   }
 }

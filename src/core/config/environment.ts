@@ -40,7 +40,19 @@ interface Config {
     secure: boolean;
     password: string;
     from: string;
-  }
+  };
+  twilio: {
+    accountSid: string;
+    authToken: string;
+    messagingServiceSid: string;
+    phoneNumber: string;
+  };
+  websocket: {
+    heartbeatInterval: number;
+    connectionTimeout: number;
+    maxPayload: number;
+    enableCompression: boolean;
+  };
 }
 
 // Configuración por defecto
@@ -80,7 +92,19 @@ const config: Config = {
     secure: process.env.EMAIL_SECURE === 'true',
     password: process.env.EMAIL_PASSWORD || 'PASSWORD',
     from: process.env.EMAIL_FROM || 'EMAIL',
-  }
+  },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+    authToken: process.env.TWILIO_AUTH_TOKEN || '',
+    messagingServiceSid: process.env.TWILIO_MESSAGE_SERVICE_SID || '',
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER || '+17178648651',
+  },
+  websocket: {
+    heartbeatInterval: parseInt(process.env.WS_HEARTBEAT_INTERVAL || '15000', 10),
+    connectionTimeout: parseInt(process.env.WS_CONNECTION_TIMEOUT || '10000', 10),
+    maxPayload: parseInt(process.env.WS_MAX_PAYLOAD || '1048576', 10), // 1MB
+    enableCompression: process.env.WS_ENABLE_COMPRESSION !== 'false',
+  },
 };
 
 // Validar configuración crítica en producción

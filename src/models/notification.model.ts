@@ -7,7 +7,8 @@ export enum NotificationType {
   APPOINTMENT_CANCELLED = 'appointment_cancelled',
   APPOINTMENT_RESCHEDULED = 'appointment_rescheduled',
   APPOINTMENT_REMINDER = 'appointment_reminder',
-  APPOINTMENT_SUMMARY = 'appointment_summary'
+  APPOINTMENT_SUMMARY = 'appointment_summary',
+  QR_SCAN_ALERT = 'qr_scan_alert'
 }
 
 export enum NotificationStatus {

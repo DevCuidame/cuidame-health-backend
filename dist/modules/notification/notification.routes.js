@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminNotificationRoutes = exports.notificationRoutes = void 0;
 // src/modules/notification/notification.routes.ts
@@ -7,6 +10,7 @@ const notification_controller_1 = require("./notification.controller");
 const notification_template_controller_1 = require("./controllers/notification-template.controller");
 const notification_preference_controller_1 = require("./controllers/notification-preference.controller");
 const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const twilio_routes_1 = __importDefault(require("./routes/twilio.routes"));
 const router = (0, express_1.Router)();
 exports.notificationRoutes = router;
 const notificationController = new notification_controller_1.NotificationController();
@@ -63,6 +67,8 @@ router.put('/preferences/:type', preferenceController.updatePreference);
  * @access Private
  */
 router.post('/preferences/initialize', preferenceController.initializePreferences);
+// Rutas de Twilio (SMS, WhatsApp, notificaciones multicanal)
+router.use('/', twilio_routes_1.default);
 // Rutas para administradores
 const adminRouter = (0, express_1.Router)();
 exports.adminNotificationRoutes = adminRouter;

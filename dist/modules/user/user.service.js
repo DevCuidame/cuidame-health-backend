@@ -4,6 +4,7 @@ exports.UserService = void 0;
 const error_handler_1 = require("../../utils/error-handler");
 const user_repository_1 = require("./user.repository");
 const password_util_1 = require("../../utils/password.util");
+const file_upload_util_1 = require("../../utils/file-upload.util");
 class UserService {
     userRepository;
     constructor() {
@@ -48,15 +49,47 @@ class UserService {
     async updateUser(userId, userData) {
         // Comprobar si el usuario existe
         await this.getUserById(userId);
-        // Si se intenta actualizar el email, verificar que no exista otro usuario con ese email
-        if (userData.email) {
-            const existingUser = await this.userRepository.findByEmail(userData.email);
-            if (existingUser && existingUser.id !== userId) {
-                throw new error_handler_1.BadRequestError('El correo electrónico ya está en uso por otro usuario');
+        return await this.userRepository.update(userId, userData, 'Usuario');
+    }
+    /**
+     * Actualizar datos de un usuario incluyendo su foto de perfil
+     * @param userId ID del usuario
+     * @param userData Datos a actualizar incluyendo imagen en base64
+     * @returns Usuario actualizado
+     */
+    async updateUserWithProfileImage(userId, userData) {
+        // Comprobar si el usuario existe
+        await this.getUserById(userId);
+        // Extraer la imagen base64 si existe
+        const imageBase64 = userData.imagebs64;
+        // Crear una copia de los datos sin la imagen para actualizar primero la información básica
+        const userDataToUpdate = { ...userData };
+        delete userDataToUpdate.imagebs64;
+        // Actualizar datos básicos del usuario
+        let updatedUser = await this.userRepository.update(userId, {
+            ...userDataToUpdate,
+            updated_at: new Date()
+        }, 'Usuario');
+        // Si hay imagen, procesarla y actualizar la URL
+        if (imageBase64) {
+            try {
+                // Guardar imagen usando el servicio de utilidad
+                const photoUrl = await file_upload_util_1.FileUploadService.saveBase64Image(imageBase64, 'users', 'profile');
+                if (photoUrl) {
+                    // Actualizar la URL y el nombre público en la base de datos
+                    updatedUser = await this.userRepository.update(userId, {
+                        path: photoUrl,
+                        pubname: userData.pubname,
+                        updated_at: new Date()
+                    }, 'Usuario');
+                }
+            }
+            catch (error) {
+                console.error('Error al guardar imagen de usuario:', error);
+                // No fallamos el proceso completo si hay error en la imagen
             }
         }
-        // Actualizar usuario
-        return await this.userRepository.update(userId, userData, 'Usuario');
+        return updatedUser;
     }
     /**
      * Cambiar contraseña de un usuario

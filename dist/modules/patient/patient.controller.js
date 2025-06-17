@@ -256,5 +256,69 @@ class PatientController {
             next(error);
         }
     };
+    /**
+     * Obtener un paciente por código
+     * @route GET /api/patients/code/:code
+     */
+    getPatientByCode = async (req, res, next) => {
+        try {
+            const code = req.params.code;
+            const userId = req.user?.id;
+            if (!code) {
+                throw new error_handler_1.BadRequestError('El código del paciente es requerido');
+            }
+            const patient = await this.patientService.getPatientByCode(code, userId);
+            const response = {
+                success: true,
+                message: 'Paciente encontrado correctamente',
+                data: patient,
+                timestamp: new Date().toISOString()
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            next(error);
+        }
+    };
+    /**
+     * Obtener un paciente por código con datos de ubicación
+     * @route POST /api/patients/code/:code
+     */
+    getPatientByCodeWithLocation = async (req, res, next) => {
+        try {
+            const code = req.params.code;
+            const { location } = req.body;
+            const userId = req.user?.id;
+            if (!code) {
+                throw new error_handler_1.BadRequestError('El código del paciente es requerido');
+            }
+            console.log(req.body);
+            // Log de datos de ubicación si están presentes
+            if (location) {
+                console.log('Datos de ubicación recibidos:', {
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    accuracy: location.accuracy,
+                    timestamp: location.timestamp,
+                    source: location.source
+                });
+            }
+            const patient = await this.patientService.getPatientByCode(code, userId);
+            // Enviar notificaciones si hay datos de ubicación
+            if (location && patient) {
+                await this.patientService.sendQRScanNotifications(patient, location);
+            }
+            const response = {
+                success: true,
+                message: 'Paciente encontrado correctamente',
+                data: patient,
+                timestamp: new Date().toISOString()
+            };
+            res.status(200).json(response);
+        }
+        catch (error) {
+            next(error);
+        }
+    };
 }
 exports.PatientController = PatientController;

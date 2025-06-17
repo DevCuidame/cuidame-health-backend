@@ -8,6 +8,18 @@ const validator_middleware_1 = require("../../middlewares/validator.middleware")
 const router = (0, express_1.Router)();
 const patientController = new patient_controller_1.PatientController();
 /**
+ * @route GET /api/patients/code/:code
+ * @desc Get patient by code
+ * @access Public
+ */
+router.get('/code/:code', patientController.getPatientByCode);
+/**
+ * @route POST /api/patients/code/:code
+ * @desc Get patient by code with location data
+ * @access Public
+ */
+router.post('/code/:code', patientController.getPatientByCodeWithLocation);
+/**
  * Routes that require authentication
  */
 router.use(auth_middleware_1.authMiddleware);

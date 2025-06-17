@@ -15,6 +15,7 @@ router.use(auth_middleware_1.authMiddleware);
  */
 router.get('/patient/:id', appointmentController.getAppointmentsByPatient);
 router.get('/professional/:id', appointmentController.getAppointmentsByProfessional);
+router.get('/search', appointmentController.searchAppointments);
 router.get('/:id', appointmentController.getAppointmentById);
 router.post('/', appointmentController.createAppointment);
 router.patch('/:id/status', appointmentController.changeAppointmentStatus);

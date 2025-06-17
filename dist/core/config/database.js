@@ -10,6 +10,7 @@ const path_1 = __importDefault(require("path"));
 // Import all entities explicitly
 const patient_model_1 = require("../../models/patient.model");
 const user_model_1 = require("../../models/user.model");
+const user_session_model_1 = require("../../models/user-session.model");
 const allergy_model_1 = require("../../models/allergy.model");
 const condition_model_1 = require("../../models/condition.model");
 const background_model_1 = require("../../models/background.model");
@@ -33,6 +34,7 @@ const typeOrmConfig = {
         // Main entities
         patient_model_1.Patient,
         user_model_1.User,
+        user_session_model_1.UserSession,
         // Health condition entities
         allergy_model_1.Allergy,
         condition_model_1.Condition,

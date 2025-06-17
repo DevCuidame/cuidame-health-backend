@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { AuthController } from '../auth/auth.controller';
+import { SessionCleanupController } from '../auth/session-cleanup.controller';
 import { validateDto } from '../../middlewares/validator.middleware';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, VerifyPasswordDto, DeleteAccountDto, ChangePasswordDto } from '../auth/auth.dto';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 
 const router = Router();
 const authController = new AuthController();
+const sessionCleanupController = new SessionCleanupController();
 
 /**
  * @route POST /api/auth/login
@@ -83,5 +85,54 @@ router.delete('/delete-account', authMiddleware, validateDto(DeleteAccountDto), 
  * @access Private
  */
 router.put('/change-password', authMiddleware, validateDto(ChangePasswordDto), authController.changePassword);
+
+/**
+ * @route GET /api/auth/sessions
+ * @desc Obtener sesiones activas del usuario
+ * @access Private
+ */
+router.get('/sessions', authMiddleware, authController.getActiveSessions);
+
+/**
+ * @route POST /api/auth/logout-session
+ * @desc Cerrar sesión específica o todas las sesiones
+ * @access Private
+ */
+router.post('/logout-session', authMiddleware, authController.logoutSession);
+
+/**
+ * @route POST /api/auth/cleanup-sessions
+ * @desc Limpiar sesiones expiradas (endpoint administrativo)
+ * @access Private
+ */
+router.post('/cleanup-sessions', authMiddleware, authController.cleanupSessions);
+
+/**
+ * @route POST /api/auth/admin/cleanup-full
+ * @desc Ejecutar limpieza completa de sesiones inactivas
+ * @access Private (Admin)
+ */
+router.post('/admin/cleanup-full', authMiddleware, sessionCleanupController.manualCleanup);
+
+/**
+ * @route POST /api/auth/admin/cleanup-light
+ * @desc Ejecutar limpieza ligera (solo sesiones expiradas)
+ * @access Private (Admin)
+ */
+router.post('/admin/cleanup-light', authMiddleware, sessionCleanupController.lightCleanup);
+
+/**
+ * @route GET /api/auth/admin/cleanup-stats
+ * @desc Obtener estadísticas del servicio de limpieza
+ * @access Private (Admin)
+ */
+router.get('/admin/cleanup-stats', authMiddleware, sessionCleanupController.getCleanupStats);
+
+/**
+ * @route POST /api/auth/admin/cleanup-configure
+ * @desc Configurar parámetros de limpieza personalizada
+ * @access Private (Admin)
+ */
+router.post('/admin/cleanup-configure', authMiddleware, sessionCleanupController.configureCleanup);
 
 export default router;

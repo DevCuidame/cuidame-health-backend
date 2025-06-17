@@ -20,6 +20,7 @@ var NotificationType;
     NotificationType["APPOINTMENT_RESCHEDULED"] = "appointment_rescheduled";
     NotificationType["APPOINTMENT_REMINDER"] = "appointment_reminder";
     NotificationType["APPOINTMENT_SUMMARY"] = "appointment_summary";
+    NotificationType["QR_SCAN_ALERT"] = "qr_scan_alert";
 })(NotificationType || (exports.NotificationType = NotificationType = {}));
 var NotificationStatus;
 (function (NotificationStatus) {

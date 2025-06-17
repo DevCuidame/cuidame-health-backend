@@ -17,17 +17,25 @@ import { CodeRepository } from '../code/code.repository';
 import { AppDataSource } from '../../core/config/database';
 import { HealthDataService } from '../health/health-data.service';
 import { ChatSessionRepository } from '../chat/chat-session.repository';
+import { MultiChannelNotificationService } from '../notification/services/multi-channel-notification.service';
+import { ContactService } from '../contact/contact.service';
+import { NotificationType } from '../../models/notification.model';
+import { CreateMultiChannelNotificationDto } from '../notification/notification.interface';
 
 export class PatientService {
   private patientRepository: PatientRepository;
   private medicalInfoRepository: MedicalInfoRepository;
   private healthRepository: HealthRepository;
   private codeRepository: CodeRepository;
+  private notificationService: MultiChannelNotificationService;
+  private contactService: ContactService;
 
   constructor() {
     this.patientRepository = new PatientRepository();
     this.medicalInfoRepository = new MedicalInfoRepository();
     this.healthRepository = new HealthRepository();
+    this.notificationService = new MultiChannelNotificationService();
+    this.contactService = new ContactService();
     this.codeRepository = new CodeRepository();
   }
 
@@ -647,5 +655,143 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
     };
 
     return enrichedPatient as Patient;
+  }
+
+  /**
+   * Enviar notificaciones cuando se escanea el código QR de un paciente
+   * @param patient Paciente cuyo código fue escaneado
+   * @param location Datos de ubicación donde se escaneó
+   */
+  async sendQRScanNotifications(
+    patient: Patient,
+    location: { latitude: number; longitude: number; accuracy?: number; timestamp: string; source: string }
+  ): Promise<void> {
+    try {
+      // Crear enlace de Google Maps
+      const googleMapsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+      
+      // Formatear fecha y hora
+      const scanTime = new Date(location.timestamp).toLocaleString('es-CO', {
+        timeZone: 'America/Bogota',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Mensaje base para las notificaciones
+      const baseMessage = `🚨 ALERTA: El código QR de ${patient.nombre} ${patient.apellido} ha sido escaneado.\n\n` +
+        `📍 Ubicación: ${googleMapsUrl}\n` +
+        `🕐 Fecha y hora: ${scanTime}\n` +
+        `📱 Precisión: ${location.accuracy ? location.accuracy + ' metros' : 'No disponible'}\n\n` +
+        `Si esta persona necesita ayuda, por favor contacte inmediatamente.`;
+
+      const emailMessage = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #d32f2f; text-align: center;">🚨 ALERTA DE CÓDIGO QR ESCANEADO</h2>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">Información del Paciente:</h3>
+            <p><strong>Nombre:</strong> ${patient.nombre} ${patient.apellido}</p>
+            <p><strong>Documento:</strong> ${patient.tipoid} ${patient.numeroid}</p>
+            <p><strong>Teléfono:</strong> ${patient.telefono}</p>
+          </div>
+          
+          <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+            <h3 style="color: #856404; margin-top: 0;">📍 Detalles del Escaneo:</h3>
+            <p><strong>Fecha y hora:</strong> ${scanTime}</p>
+            <p><strong>Precisión:</strong> ${location.accuracy ? location.accuracy + ' metros' : 'No disponible'}</p>
+            <p><strong>Fuente:</strong> ${location.source}</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="${googleMapsUrl}" 
+                 style="background-color: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                📍 Ver Ubicación en Google Maps
+              </a>
+            </div>
+          </div>
+          
+          <div style="background-color: #f8d7da; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+            <p style="color: #721c24; margin: 0; font-weight: bold;">
+              Si esta persona necesita ayuda médica, por favor contacte inmediatamente a los servicios de emergencia.
+            </p>
+          </div>
+        </div>
+      `;
+
+      // 1. Enviar notificación al cuidador
+      if (patient.a_cargo_id) {
+        const caregiverNotification: CreateMultiChannelNotificationDto = {
+          user_id: patient.a_cargo_id,
+          type: NotificationType.QR_SCAN_ALERT,
+          title: `🚨 Código QR escaneado - ${patient.nombre} ${patient.apellido}`,
+          message: emailMessage,
+          channels: {
+            email: true,
+            sms: true,
+            whatsapp: true,
+            push: true,
+            inapp: true
+          }
+        };
+
+        await this.notificationService.sendMultiChannelNotification(caregiverNotification);
+        console.log(`✅ Notificación enviada al cuidador (ID: ${patient.a_cargo_id})`);
+      }
+
+      // 2. Enviar notificaciones a contactos de emergencia
+      if (patient.a_cargo_id) {
+        const emergencyContacts = await this.contactService.getContactsByUserId(patient.a_cargo_id);
+        
+        if (emergencyContacts) {
+          const contacts = [
+            { name: emergencyContacts.nombre1, phone: emergencyContacts.telefono1 },
+            { name: emergencyContacts.nombre2, phone: emergencyContacts.telefono2 },
+            { name: emergencyContacts.nombre3, phone: emergencyContacts.telefono3 }
+          ].filter(contact => contact.name && contact.phone);
+
+          for (const contact of contacts) {
+            try {
+              // Mensaje personalizado para contacto de emergencia
+              const contactMessage = `🚨 ALERTA DE EMERGENCIA\n\n` +
+                `Hola ${contact.name}, el código QR de ${patient.nombre} ${patient.apellido} ha sido escaneado.\n\n` +
+                `📍 Ubicación: ${googleMapsUrl}\n` +
+                `🕐 Fecha y hora: ${scanTime}\n\n` +
+                `Por favor, verifique el estado de esta persona inmediatamente.`;
+
+              // Crear notificación temporal para el contacto (usando SMS y WhatsApp)
+              const contactNotification: CreateMultiChannelNotificationDto = {
+                user_id: patient.a_cargo_id, // Usamos el ID del cuidador como referencia
+                type: NotificationType.QR_SCAN_ALERT,
+                title: `🚨 Alerta de Emergencia - ${patient.nombre}`,
+                message: contactMessage,
+                phoneNumber: contact.phone,
+                whatsappNumber: contact.phone,
+                channels: {
+                  email: false,
+                  sms: true,
+                  whatsapp: true,
+                  push: false,
+                  inapp: false
+                }
+              };
+
+              await this.notificationService.sendMultiChannelNotification(contactNotification);
+              console.log(`✅ Notificación enviada al contacto de emergencia: ${contact.name} (${contact.phone})`);
+              
+            } catch (contactError) {
+              console.error(`❌ Error enviando notificación a contacto ${contact.name}:`, contactError);
+            }
+          }
+        }
+      }
+
+      console.log(`🎯 Notificaciones de escaneo QR enviadas para paciente: ${patient.nombre} ${patient.apellido}`);
+      
+    } catch (error) {
+      console.error('❌ Error enviando notificaciones de escaneo QR:', error);
+      // No lanzamos el error para no interrumpir la respuesta principal
+    }
   }
 }

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { UnauthorizedError } from '../utils/error-handler';
 import config from '../core/config/environment';
 import { AppDataSource } from '../core/config/database';
+import { UserSessionRepository } from '../modules/auth/user-session.repository';
 
 // Extender interface de Request para incluir usuario
 declare global {
@@ -34,7 +35,7 @@ export const authMiddleware = async (
       return next(new UnauthorizedError('No ha iniciado sesión. Por favor inicie sesión para acceder.'));
     }
 
-    // 2) Verificar token
+    // 2) Verificar token JWT
     const decoded: any = jwt.verify(token, config.jwt.secret);
 
     // Rechazar refresh tokens en rutas protegidas
@@ -44,20 +45,37 @@ export const authMiddleware = async (
       );
     }
 
-    // 3) Comprobar si el usuario todavía existe
-    const userRepository = AppDataSource.getRepository('users');
-    const currentUser = await userRepository.findOne({ 
-      where: { id: decoded.id }
-    });
+    // 3) Verificar que la sesión existe y está activa
+    const userSessionRepository = new UserSessionRepository();
+    const session = await userSessionRepository.findByAccessToken(token);
 
-    if (!currentUser) {
+    if (!session) {
       return next(
-        new UnauthorizedError('El usuario asociado a este token ya no existe.')
+        new UnauthorizedError('Sesión no encontrada. Por favor inicie sesión de nuevo.')
       );
     }
 
-    // 4) Añadir el usuario a req
-    req.user = currentUser;
+    // 4) Verificar que la sesión no haya expirado
+    if (session.expires_at < new Date()) {
+      // Desactivar sesión expirada
+      await userSessionRepository.deactivateSession(session.id);
+      return next(
+        new UnauthorizedError('Su sesión ha expirado. Por favor inicie sesión de nuevo.')
+      );
+    }
+
+    // 5) Verificar que la sesión esté activa
+    if (!session.is_active) {
+      return next(
+        new UnauthorizedError('Sesión inactiva. Por favor inicie sesión de nuevo.')
+      );
+    }
+
+    // 6) Actualizar última vez usado
+    await userSessionRepository.updateLastUsed(session.id);
+
+    // 7) Añadir el usuario a req
+    req.user = session.user;
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
@@ -85,7 +103,33 @@ export const refreshTokenMiddleware = async (
       return next(new UnauthorizedError('Refresh token no proporcionado.'));
     }
 
-    // Verificar token
+    // Verificar que la sesión existe por refresh token
+    const userSessionRepository = new UserSessionRepository();
+    const session = await userSessionRepository.findByRefreshToken(refresh_token);
+
+    if (!session) {
+      return next(
+        new UnauthorizedError('Refresh token inválido o sesión no encontrada.')
+      );
+    }
+
+    // Verificar que el refresh token no haya expirado
+    if (session.refresh_expires_at < new Date()) {
+      // Desactivar sesión expirada
+      await userSessionRepository.deactivateSession(session.id);
+      return next(
+        new UnauthorizedError('El refresh token ha expirado.')
+      );
+    }
+
+    // Verificar que la sesión esté activa
+    if (!session.is_active) {
+      return next(
+        new UnauthorizedError('Sesión inactiva.')
+      );
+    }
+
+    // Verificar token JWT
     const decoded: any = jwt.verify(refresh_token, config.jwt.secret);
 
     // Verificar que sea un refresh token
@@ -95,20 +139,8 @@ export const refreshTokenMiddleware = async (
       );
     }
 
-    // Comprobar si el usuario todavía existe
-    const userRepository = AppDataSource.getRepository('users');
-    const currentUser = await userRepository.findOne({ 
-      where: { id: decoded.id }
-    });
-
-    if (!currentUser) {
-      return next(
-        new UnauthorizedError('El usuario asociado a este token ya no existe.')
-      );
-    }
-
     // Añadir el usuario a req
-    req.user = currentUser;
+    req.user = session.user;
     next();
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {

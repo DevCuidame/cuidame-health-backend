@@ -1,154 +1,227 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationTemplateService = void 0;
-// src/modules/notification/services/notification-template.service.ts
-const notification_template_repository_1 = require("../repositories/notification-template.repository");
+const database_1 = require("../../../core/config/database");
+const logger_1 = __importDefault(require("../../../utils/logger"));
 const error_handler_1 = require("../../../utils/error-handler");
-/**
- * Servicio para la gestión de plantillas de notificaciones
- */
 class NotificationTemplateService {
-    notificationTemplateRepository;
+    templateRepository;
     constructor() {
-        this.notificationTemplateRepository = new notification_template_repository_1.NotificationTemplateRepository();
+        // Nota: Asumiendo que existe una entidad NotificationTemplate
+        // Si no existe, necesitarás crearla o ajustar esto según tu esquema de BD
+        this.templateRepository = database_1.AppDataSource.getRepository('notification_template');
     }
     /**
-     * Obtiene todas las plantillas de notificación
-     * @returns Lista de plantillas
-     */
-    async getAllTemplates() {
-        return await this.notificationTemplateRepository.findAll({
-            where: { is_active: true },
-            order: { name: 'ASC' }
-        });
-    }
-    /**
-     * Obtiene una plantilla por ID
+     * Obtener plantilla por ID
      * @param id ID de la plantilla
-     * @returns Plantilla encontrada
+     * @returns Plantilla de notificación
      */
     async getTemplateById(id) {
-        const template = await this.notificationTemplateRepository.findById(id);
-        if (!template) {
-            throw new error_handler_1.NotFoundError(`Plantilla con ID ${id} no encontrada`);
+        try {
+            const template = await this.templateRepository.findOne({
+                where: { id }
+            });
+            return template;
         }
-        return template;
+        catch (error) {
+            logger_1.default.error(`Error al obtener plantilla con ID ${id}:`, error);
+            return null;
+        }
     }
     /**
-     * Obtiene una plantilla por código único
+     * Obtener plantilla por código
      * @param code Código de la plantilla
-     * @returns Plantilla encontrada
+     * @returns Plantilla de notificación
      */
     async getTemplateByCode(code) {
-        const template = await this.notificationTemplateRepository.findByCode(code);
-        if (!template) {
-            throw new error_handler_1.NotFoundError(`Plantilla con código ${code} no encontrada`);
+        try {
+            const template = await this.templateRepository.findOne({
+                where: { code, active: true }
+            });
+            return template;
         }
-        return template;
+        catch (error) {
+            logger_1.default.error(`Error al obtener plantilla con código ${code}:`, error);
+            return null;
+        }
     }
     /**
-     * Obtiene plantillas por tipo de notificación
+     * Obtener plantillas por tipo
      * @param type Tipo de notificación
-     * @returns Lista de plantillas
+     * @returns Lista de plantillas del tipo especificado
      */
     async getTemplatesByType(type) {
-        return await this.notificationTemplateRepository.findByType(type);
+        try {
+            return await this.templateRepository.find({
+                where: { type, active: true },
+                order: { name: 'ASC' }
+            });
+        }
+        catch (error) {
+            logger_1.default.error(`Error al obtener plantillas del tipo ${type}:`, error);
+            throw error;
+        }
     }
     /**
-     * Crea una nueva plantilla de notificación
-     * @param data Datos de la plantilla
-     * @returns Plantilla creada
+     * Renderizar plantilla con variables
+     * @param code Código de la plantilla
+     * @param variables Variables para reemplazar en la plantilla
+     * @returns Plantilla renderizada
      */
-    async createTemplate(data) {
-        // Verificar datos mínimos
-        if (!data.name || !data.code || !data.type || !data.subject || !data.body_template) {
-            throw new error_handler_1.BadRequestError('Faltan datos obligatorios para crear la plantilla');
+    async renderTemplate(code, variables) {
+        const template = await this.getTemplateByCode(code);
+        if (!template) {
+            throw new error_handler_1.NotFoundError(`Plantilla con código '${code}' no encontrada`);
         }
-        // Verificar que no exista otra plantilla con el mismo código
-        const existingTemplate = await this.notificationTemplateRepository.findByCode(data.code);
-        if (existingTemplate) {
-            throw new error_handler_1.BadRequestError(`Ya existe una plantilla con el código ${data.code}`);
-        }
-        // Extraer variables de la plantilla (formato {{variable}})
-        const variableMatches = data.body_template.match(/{{([^}]+)}}/g);
-        if (variableMatches) {
-            // Eliminar duplicados y extraer los nombres de variables
-            const variables = [...new Set(variableMatches)].map(match => match.replace(/{{|}}/g, ''));
-            data.variables = variables;
-        }
-        else {
-            data.variables = [];
-        }
-        return await this.notificationTemplateRepository.create(data);
-    }
-    /**
-     * Actualiza una plantilla existente
-     * @param id ID de la plantilla
-     * @param data Datos a actualizar
-     * @returns Plantilla actualizada
-     */
-    async updateTemplate(id, data) {
-        // Verificar si existe la plantilla
-        await this.getTemplateById(id);
-        // Si se actualiza el código, verificar que no exista otro con ese código
-        if (data.code) {
-            const existingTemplate = await this.notificationTemplateRepository.findByCode(data.code);
-            if (existingTemplate && existingTemplate.id !== id) {
-                throw new error_handler_1.BadRequestError(`Ya existe una plantilla con el código ${data.code}`);
-            }
-        }
-        // Si se actualiza el body_template, actualizar también las variables
-        if (data.body_template) {
-            const variableMatches = data.body_template.match(/{{([^}]+)}}/g);
-            if (variableMatches) {
-                // Eliminar duplicados y extraer los nombres de variables
-                const variables = [...new Set(variableMatches)].map(match => match.replace(/{{|}}/g, ''));
-                data.variables = variables;
-            }
-            else {
-                data.variables = [];
-            }
-        }
-        return await this.notificationTemplateRepository.update(id, data, 'Plantilla de notificación');
-    }
-    /**
-     * Elimina (desactiva) una plantilla
-     * @param id ID de la plantilla
-     * @returns Mensaje de confirmación
-     */
-    async deleteTemplate(id) {
-        // Verificar si existe la plantilla
-        await this.getTemplateById(id);
-        // Desactivar en lugar de eliminar
-        await this.notificationTemplateRepository.update(id, { is_active: false }, 'Plantilla de notificación');
+        // Renderizar subject y body reemplazando variables
+        const renderedSubject = this.replaceVariables(template.subject, variables);
+        const renderedBody = this.replaceVariables(template.body, variables);
         return {
-            success: true,
-            message: 'Plantilla desactivada correctamente'
+            subject: renderedSubject,
+            body: renderedBody
         };
     }
     /**
-     * Renderiza una plantilla con datos
-     * @param templateCode Código de la plantilla
-     * @param data Datos para renderizar
-     * @returns Objeto con asunto y cuerpo renderizado
+     * Reemplazar variables en el texto
+     * @param text Texto con variables
+     * @param variables Variables para reemplazar
+     * @returns Texto con variables reemplazadas
      */
-    async renderTemplate(templateCode, data) {
-        // Obtener la plantilla
-        const template = await this.getTemplateByCode(templateCode);
-        // Renderizar el asunto
-        let subject = template.subject;
-        // Renderizar el cuerpo
-        let body = template.body_template;
-        // Reemplazar variables en asunto y cuerpo
-        if (template.variables && template.variables.length > 0) {
-            template.variables.forEach(variable => {
-                const value = data[variable] !== undefined ? data[variable] : '';
-                const regex = new RegExp(`{{${variable}}}`, 'g');
-                subject = subject.replace(regex, value);
-                body = body.replace(regex, value);
+    replaceVariables(text, variables) {
+        let result = text;
+        // Reemplazar variables en formato {{variable}}
+        Object.keys(variables).forEach(key => {
+            const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+            result = result.replace(regex, variables[key] || '');
+        });
+        // También soportar formato {variable}
+        Object.keys(variables).forEach(key => {
+            const regex = new RegExp(`{\\s*${key}\\s*}`, 'g');
+            result = result.replace(regex, variables[key] || '');
+        });
+        return result;
+    }
+    /**
+     * Crear nueva plantilla
+     * @param templateData Datos de la plantilla
+     * @returns Plantilla creada
+     */
+    async createTemplate(templateData) {
+        try {
+            const template = this.templateRepository.create({
+                ...templateData,
+                created_at: new Date(),
+                updated_at: new Date()
+            });
+            const savedTemplate = await this.templateRepository.save(template);
+            logger_1.default.info(`Plantilla creada con código: ${savedTemplate.code}`);
+            return savedTemplate;
+        }
+        catch (error) {
+            logger_1.default.error('Error al crear plantilla:', error);
+            throw error;
+        }
+    }
+    /**
+     * Actualizar plantilla
+     * @param id ID de la plantilla
+     * @param updateData Datos a actualizar
+     * @returns Plantilla actualizada
+     */
+    async updateTemplate(id, updateData) {
+        try {
+            await this.templateRepository.update(id, {
+                ...updateData,
+                updated_at: new Date()
+            });
+            const updatedTemplate = await this.templateRepository.findOne({ where: { id } });
+            if (!updatedTemplate) {
+                throw new error_handler_1.NotFoundError(`Plantilla con ID ${id} no encontrada`);
+            }
+            logger_1.default.info(`Plantilla actualizada con ID: ${id}`);
+            return updatedTemplate;
+        }
+        catch (error) {
+            logger_1.default.error(`Error al actualizar plantilla con ID ${id}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Obtener todas las plantillas
+     * @returns Lista de todas las plantillas
+     */
+    async getAllTemplates() {
+        try {
+            return await this.templateRepository.find({
+                order: { name: 'ASC' }
             });
         }
-        return { subject, body };
+        catch (error) {
+            logger_1.default.error('Error al obtener todas las plantillas:', error);
+            throw error;
+        }
+    }
+    /**
+     * Obtener todas las plantillas activas
+     * @returns Lista de plantillas activas
+     */
+    async getActiveTemplates() {
+        try {
+            return await this.templateRepository.find({
+                where: { active: true },
+                order: { name: 'ASC' }
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Error al obtener plantillas activas:', error);
+            throw error;
+        }
+    }
+    /**
+     * Eliminar plantilla
+     * @param id ID de la plantilla
+     * @returns Resultado de la operación
+     */
+    async deleteTemplate(id) {
+        try {
+            const template = await this.templateRepository.findOne({ where: { id } });
+            if (!template) {
+                return {
+                    success: false,
+                    message: `Plantilla con ID ${id} no encontrada`
+                };
+            }
+            await this.templateRepository.delete(id);
+            logger_1.default.info(`Plantilla eliminada con ID: ${id}`);
+            return {
+                success: true,
+                message: 'Plantilla eliminada correctamente'
+            };
+        }
+        catch (error) {
+            logger_1.default.error(`Error al eliminar plantilla con ID ${id}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Desactivar plantilla
+     * @param id ID de la plantilla
+     */
+    async deactivateTemplate(id) {
+        try {
+            await this.templateRepository.update(id, {
+                active: false,
+                updated_at: new Date()
+            });
+            logger_1.default.info(`Plantilla desactivada con ID: ${id}`);
+        }
+        catch (error) {
+            logger_1.default.error(`Error al desactivar plantilla con ID ${id}:`, error);
+            throw error;
+        }
     }
 }
 exports.NotificationTemplateService = NotificationTemplateService;

@@ -326,4 +326,51 @@ getPatientWithHealthData = async (req: Request, res: Response, next: NextFunctio
       next(error);
     }
   };
+
+  /**
+   * Obtener un paciente por código con datos de ubicación
+   * @route POST /api/patients/code/:code
+   */
+  getPatientByCodeWithLocation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const code = req.params.code;
+      const { location } = req.body;
+      const userId = req.user?.id;
+      
+      if (!code) {
+        throw new BadRequestError('El código del paciente es requerido');
+      }
+
+      console.log(req.body)
+      
+      // Log de datos de ubicación si están presentes
+      if (location) {
+        console.log('Datos de ubicación recibidos:', {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy,
+          timestamp: location.timestamp,
+          source: location.source
+        });
+      }
+      
+      const patient = await this.patientService.getPatientByCode(code, userId);
+      
+      // Enviar notificaciones si hay datos de ubicación
+      if (location && patient) {
+        await this.patientService.sendQRScanNotifications(patient, location);
+      }
+      
+      const response: ApiResponse = {
+        success: true,
+        message: 'Paciente encontrado correctamente',
+        data: patient,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

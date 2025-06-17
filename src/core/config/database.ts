@@ -19,6 +19,7 @@ import {
 import { ControlMedicine } from '../../models/control-medicine.model';
 import { Disease } from '../../models/diseases.model';
 import { Department, Township } from '../../models/location.model';
+import { UserSession } from '../../models/user-session.model';
 
 const typeOrmConfig: PostgresConnectionOptions = {
   type: 'postgres',
@@ -37,6 +38,7 @@ const typeOrmConfig: PostgresConnectionOptions = {
     // Main entities
     Patient,
     User,
+    UserSession,
     
     // Health condition entities
     Allergy,

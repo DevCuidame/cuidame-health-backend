@@ -4,6 +4,8 @@ import logger from './utils/logger';
 import { ChatSocketService } from './modules/chat/websocket/chat-socket.service';
 import http from 'http';
 import { AppointmentSocketService } from './modules/appointment/websocket/appointment-socket.service';
+import { initializeSessionCleanup, stopSessionCleanup } from './utils/session-cleanup.service';
+import { AppDataSource } from './core/config/database';
 // import expressWs from 'express-ws';
 // Establecer puerto
 const PORT = config.server.port;
@@ -45,6 +47,31 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
+// Función para inicializar servicios después de que la base de datos esté lista
+const initializeServices = async () => {
+  // Esperar a que la base de datos esté inicializada
+  let retries = 0;
+  const maxRetries = 30; // 30 segundos máximo
+  
+  while (!AppDataSource.isInitialized && retries < maxRetries) {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+    retries++;
+  }
+  
+  if (!AppDataSource.isInitialized) {
+    logger.error('❌ Base de datos no inicializada después de 30 segundos');
+    return;
+  }
+  
+  // Inicializar servicio de limpieza automática de sesiones
+  try {
+    initializeSessionCleanup(24); // Ejecutar cada 24 horas
+    logger.info('🧹 Servicio de limpieza automática de sesiones iniciado');
+  } catch (error) {
+    logger.error('❌ Error al inicializar servicio de limpieza de sesiones:', error);
+  }
+};
+
 // Iniciar servidor
 server.listen(PORT, () => {
   logger.info(`🚀 Servidor ejecutándose en http://${HOST}:${PORT}`);
@@ -53,6 +80,9 @@ server.listen(PORT, () => {
   );
   logger.info(`📱 WebSocket Chat disponible en ws://${HOST}:${PORT}/ws/chat`);
   logger.info(`🌍 Entorno: ${config.env}`);
+  
+  // Inicializar servicios de forma asíncrona
+  initializeServices();
 });
 
 // Manejar errores del servidor
@@ -78,6 +108,16 @@ process.on('SIGINT', () => {
 
 // Función para cerrar graciosamente
 const shutdown = () => {
+  logger.info('Iniciando cierre gracioso del servidor...');
+  
+  // Detener servicio de limpieza de sesiones
+  try {
+    stopSessionCleanup();
+    logger.info('🧹 Servicio de limpieza de sesiones detenido');
+  } catch (error) {
+    logger.error('❌ Error al detener servicio de limpieza:', error);
+  }
+  
   server.close(() => {
     logger.info('Servidor HTTP cerrado');
     process.exit(0);
