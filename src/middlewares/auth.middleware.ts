@@ -56,13 +56,13 @@ export const authMiddleware = async (
     }
 
     // 4) Verificar que la sesión no haya expirado
-    if (session.expires_at < new Date()) {
-      // Desactivar sesión expirada
-      await userSessionRepository.deactivateSession(session.id);
-      return next(
-        new UnauthorizedError('Su sesión ha expirado. Por favor inicie sesión de nuevo.')
-      );
-    }
+    // if (session.expires_at < new Date()) {
+    //   // Desactivar sesión expirada
+    //   await userSessionRepository.deactivateSession(session.id);
+    //   return next(
+    //     new UnauthorizedError('Su sesión ha expirado. Por favor inicie sesión de nuevo.')
+    //   );
+    // }
 
     // 5) Verificar que la sesión esté activa
     if (!session.is_active) {
