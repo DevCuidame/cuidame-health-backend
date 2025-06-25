@@ -196,7 +196,7 @@ export class AuthService {
         department: userDepartment,
         pubname: user.pubname,
         privname: user.privname,
-        imagebs64: user.imagebs64,
+        // imagebs64: user.imagebs64,
         path: user.path,
         role: roleName,
       },
