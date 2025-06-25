@@ -5,8 +5,12 @@ import {
   RegisterDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  ChangePasswordDto,
 } from '../auth/auth.dto';
 import { ApiResponse } from '../../core/interfaces/response.interface';
+import { validateDto } from '../../middlewares/validator.middleware';
+import { IDeviceInfo } from '../auth/auth.interface';
+import  logger  from '../../utils/logger';
 
 export class AuthController {
   private authService: AuthService;
@@ -24,7 +28,12 @@ export class AuthController {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
+    const startTime = Date.now();
+    const requestId = Math.random().toString(36).substring(7);
+    
     try {
+      logger.info(`🔐 [LOGIN-${requestId}] Iniciando proceso de login para: ${req.body.email}`);
+      
       const credentials: LoginDto = req.body;
 
       // Extraer información del dispositivo del request
@@ -35,7 +44,13 @@ export class AuthController {
         userAgent: req.get('User-Agent') || 'unknown',
       };
 
+      logger.info(`🔐 [LOGIN-${requestId}] Información del dispositivo preparada - IP: ${deviceInfo.ipAddress}`);
+      
+      const authStartTime = Date.now();
       const result = await this.authService.login(credentials, deviceInfo);
+      const authEndTime = Date.now();
+      
+      logger.info(`🔐 [LOGIN-${requestId}] Servicio de autenticación completado en ${authEndTime - authStartTime}ms`);
 
       const response: ApiResponse = {
         success: result.success,
@@ -44,8 +59,13 @@ export class AuthController {
         timestamp: new Date().toISOString(),
       };
 
+      const totalTime = Date.now() - startTime;
+      logger.info(`🔐 [LOGIN-${requestId}] Login completado exitosamente en ${totalTime}ms`);
+      
       res.status(200).json(response);
     } catch (error) {
+      const totalTime = Date.now() - startTime;
+      logger.error(`🔐 [LOGIN-${requestId}] Error en login después de ${totalTime}ms:`, error);
       next(error);
     }
   };

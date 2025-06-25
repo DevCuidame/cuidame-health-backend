@@ -76,66 +76,107 @@ export class AuthService {
    * @returns Respuesta de autenticación básica
    */
   async login(credentials: ILoginCredentials, deviceInfo?: IDeviceInfo): Promise<IAuthResponse> {
+    const startTime = Date.now();
     const { email, password } = credentials;
     const normalizedEmail = email.toLowerCase();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Iniciando autenticación para: ${normalizedEmail}`);
 
     // Buscar usuario por email incluyendo el campo password
+    const userSearchStart = Date.now();
     const user = await this.userRepository.findByEmail(normalizedEmail, true);
+    const userSearchEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Búsqueda de usuario completada en ${userSearchEnd - userSearchStart}ms`);
+    
     if (!user) {
+      logger.warn(`🔐 [AUTH-SERVICE] Usuario no encontrado: ${normalizedEmail}`);
       throw new UnauthorizedError('Credenciales inválidas');
     }
 
+    logger.info(`🔐 [AUTH-SERVICE] Usuario encontrado: ID ${user.id}`);
+
     // Verificar contraseña
     if (!user.password) {
+      logger.warn(`🔐 [AUTH-SERVICE] Usuario ${user.id} no tiene contraseña configurada`);
       throw new UnauthorizedError('Este usuario no tiene contraseña configurada');
     }
 
     // Verificar contraseña (compatible con MD5 y PBKDF2)
+    const passwordVerifyStart = Date.now();
     const isPasswordValid = PasswordService.verifyPassword(password, user.password);
+    const passwordVerifyEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Verificación de contraseña completada en ${passwordVerifyEnd - passwordVerifyStart}ms`);
+    
     if (!isPasswordValid) {
+      logger.warn(`🔐 [AUTH-SERVICE] Contraseña inválida para usuario: ${user.id}`);
       throw new UnauthorizedError('Credenciales inválidas');
     }
 
     let message = 'Sesión iniciada exitosamente';
     if (!user.verificado) {
       message = 'emailnoverificado';
+      logger.info(`🔐 [AUTH-SERVICE] Usuario ${user.id} no verificado`);
     }
 
     // Limitar número de sesiones activas por usuario ANTES de crear la nueva (máximo 5)
+    const sessionLimitStart = Date.now();
     await this.userSessionRepository.limitUserSessions(user.id, 4);
+    const sessionLimitEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Limitación de sesiones completada en ${sessionLimitEnd - sessionLimitStart}ms`);
 
     // Crear nueva sesión
+    const sessionCreateStart = Date.now();
     const sessionResponse = await this.createUserSession(user.id, deviceInfo);
+    const sessionCreateEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Creación de sesión completada en ${sessionCreateEnd - sessionCreateStart}ms`);
 
     // Obtener solo información básica del usuario
+    const userRoleStart = Date.now();
     const userRoleRepository = AppDataSource.getRepository(UserRole);
     const userRole = await userRoleRepository.findOne({
       where: { user_id: user.id },
       relations: ['role']
     });
+    const userRoleEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Obtención de rol completada en ${userRoleEnd - userRoleStart}ms`);
+    
     const roleName = userRole?.role?.name || 'User';
 
     // Obtener información básica de ubicación del usuario
     let userDepartment = null;
     if (user.city_id) {
       try {
+        const locationStart = Date.now();
         const locationRepository = AppDataSource.getRepository('townships');
         const cityData = await locationRepository.findOne({
           where: { id: user.city_id },
           relations: ['department']
         });
+        const locationEnd = Date.now();
+        
+        logger.info(`🔐 [AUTH-SERVICE] Obtención de ubicación completada en ${locationEnd - locationStart}ms`);
+        
         if (cityData?.department) {
           userDepartment = cityData.department.id;
         }
       } catch (error) {
-        logger.error('Error al obtener información de ubicación del usuario:', error);
+        logger.error('🔐 [AUTH-SERVICE] Error al obtener información de ubicación del usuario:', error);
       }
     }
 
     // Obtener solo el conteo de pacientes (sin cargar todos los datos)
+    const patientCountStart = Date.now();
     const patientCount = await this.patientRepository.count({
       where: { a_cargo_id: user.id }
     });
+    const patientCountEnd = Date.now();
+    
+    logger.info(`🔐 [AUTH-SERVICE] Conteo de pacientes completado en ${patientCountEnd - patientCountStart}ms - Total: ${patientCount}`);
 
     // Respuesta básica optimizada
     const userData = {
@@ -166,6 +207,9 @@ export class AuthService {
       // Los datos de pacientes se cargan por separado
       cared_persons: [],
     };
+
+    const totalTime = Date.now() - startTime;
+    logger.info(`🔐 [AUTH-SERVICE] Login completo en ${totalTime}ms para usuario ${user.id}`);
 
     return {
       success: true,
@@ -872,17 +916,33 @@ export class AuthService {
    * @returns Datos de la sesión creada
    */
   async createUserSession(userId: number, deviceInfo?: IDeviceInfo): Promise<ISessionResponse> {
+    const startTime = Date.now();
+    logger.info(`🔐 [SESSION] Iniciando creación de sesión para usuario ${userId}`);
+    
     // Generar tokens
+    const userFindStart = Date.now();
     const user = await this.userRepository.findById(userId);
+    const userFindEnd = Date.now();
+    
+    logger.info(`🔐 [SESSION] Búsqueda de usuario completada en ${userFindEnd - userFindStart}ms`);
+    
     if (!user) {
       throw new NotFoundError(`Usuario con ID ${userId} no encontrado`);
     }
 
     // Generar token JWT
+    const tokenGenStart = Date.now();
     const accessToken = await this.generateToken(user);
+    const tokenGenEnd = Date.now();
+    
+    logger.info(`🔐 [SESSION] Generación de token completada en ${tokenGenEnd - tokenGenStart}ms`);
     
     // Generar refresh token
+    const refreshTokenGenStart = Date.now();
     const refreshToken = this.generateRefreshToken(user);
+    const refreshTokenGenEnd = Date.now();
+    
+    logger.info(`🔐 [SESSION] Generación de refresh token completada en ${refreshTokenGenEnd - refreshTokenGenStart}ms`);
 
     // Calcular fechas de expiración
     const expiresAt = new Date();
@@ -898,6 +958,7 @@ export class AuthService {
     }
 
     // Crear nueva sesión
+    const sessionCreateStart = Date.now();
     const session = await this.userSessionRepository.createSession({
       user_id: userId,
       access_token: accessToken,
@@ -912,6 +973,11 @@ export class AuthService {
       last_used_at: new Date(),
       is_active: true
     });
+    const sessionCreateEnd = Date.now();
+    
+    const totalTime = Date.now() - startTime;
+    logger.info(`🔐 [SESSION] Sesión creada exitosamente en ${totalTime}ms - ID: ${session.id}`);
+    logger.info(`🔐 [SESSION] Tiempo en DB: ${sessionCreateEnd - sessionCreateStart}ms`);
 
     return {
       sessionId: session.id,
