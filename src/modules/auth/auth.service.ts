@@ -70,10 +70,10 @@ export class AuthService {
    */
 
 /**
-   * Login básico optimizado - Solo autenticación y tokens
+   * Iniciar sesión de usuario
    * @param credentials Credenciales de inicio de sesión
    * @param deviceInfo Información del dispositivo
-   * @returns Respuesta de autenticación básica
+   * @returns Respuesta de autenticación con token y datos de usuario
    */
   async login(credentials: ILoginCredentials, deviceInfo?: IDeviceInfo): Promise<IAuthResponse> {
     const { email, password } = credentials;
@@ -103,13 +103,68 @@ export class AuthService {
       message = 'emailnoverificado';
     }
 
+    // Limpieza automática de sesiones inactivas
+    await this.userSessionRepository.cleanInactiveSessionsAutomatically();
+
     // Limitar número de sesiones activas por usuario ANTES de crear la nueva (máximo 5)
     await this.userSessionRepository.limitUserSessions(user.id, 4);
 
     // Crear nueva sesión
     const sessionResponse = await this.createUserSession(user.id, deviceInfo);
 
-    // Obtener solo información básica del usuario
+    // Obtener pacientes a cargo
+    let cared_persons = await this.patientRepository.findByCaregiverId(user.id);
+    const patientCount = cared_persons ? cared_persons.length : 0;
+
+    // Enriquecer datos de pacientes con información de salud y médica
+    if (cared_persons && cared_persons.length > 0) {
+      const enrichedPatients = await Promise.all(
+        cared_persons.map(async (patient) => {
+          const { ...patientWithoutImage } = patient;
+          
+          // Obtener datos de salud y médicos en paralelo
+          const [latestVitals, medicalInfo] = await Promise.all([
+            this.healthRepository.getLatestVitals(patient.id),
+            this.medicalInfoRepository.getAllMedicalInfo(patient.id)
+          ]);
+
+          // Obtener información de ubicación
+          let cityName = patient.ciudad || "";
+          let departmentName = patient.departamento || "";
+
+          if (patient.city_id) {
+            try {
+              const locationRepository = AppDataSource.getRepository('townships');
+              const cityData = await locationRepository.findOne({
+                where: { id: patient.city_id },
+                relations: ['department']
+              });
+
+              if (cityData) {
+                cityName = cityData.name;
+                if (cityData.department) {
+                  departmentName = cityData.department.name;
+                }
+              }
+            } catch (error) {
+              console.error('Error al obtener información de ubicación del paciente:', error);
+            }
+          }
+
+          return {
+            ...patientWithoutImage,
+            ciudad: cityName,
+            departamento: departmentName,
+            latestVitals,
+            medicalInfo
+          };
+        })
+      );
+      
+      cared_persons = enrichedPatients;
+    }
+
+    // Obtener rol del usuario
     const userRoleRepository = AppDataSource.getRepository(UserRole);
     const userRole = await userRoleRepository.findOne({
       where: { user_id: user.id },
@@ -118,7 +173,7 @@ export class AuthService {
     
     const roleName = userRole?.role?.name || 'User';
 
-    // Obtener información básica de ubicación del usuario
+    // Obtener información de ubicación del usuario
     let userDepartment = null;
     if (user.city_id) {
       try {
@@ -136,12 +191,6 @@ export class AuthService {
       }
     }
 
-    // Obtener solo el conteo de pacientes (sin cargar todos los datos)
-    const patientCount = await this.patientRepository.count({
-      where: { a_cargo_id: user.id }
-    });
-
-    // Respuesta básica optimizada
     const userData = {
       user: {
         id: user.id,
@@ -167,8 +216,7 @@ export class AuthService {
       refresh_token: sessionResponse.refreshToken,
       session_id: sessionResponse.sessionId,
       patientCount: patientCount,
-      // Los datos de pacientes se cargan por separado
-      cared_persons: [],
+      cared_persons: cared_persons || [],
     };
 
     return {
@@ -180,110 +228,7 @@ export class AuthService {
     };
   }
 
-  /**
-   * Obtener datos enriquecidos de pacientes a cargo
-   * @param userId ID del usuario
-   * @param includeHealthData Si incluir datos de salud
-   * @param includeMedicalInfo Si incluir información médica
-   * @returns Lista de pacientes con datos enriquecidos
-   */
-  async getCaredPatientsData(
-    userId: number, 
-    includeHealthData: boolean = true, 
-    includeMedicalInfo: boolean = true
-  ): Promise<any[]> {
-    // Obtener pacientes básicos
-    let cared_persons = await this.patientRepository.findByCaregiverId(userId);
 
-    if (!cared_persons || cared_persons.length === 0) {
-      return [];
-    }
-
-    // Enriquecer datos si se solicita
-    if (includeHealthData || includeMedicalInfo) {
-      const enrichedPatients = await Promise.all(
-        cared_persons.map(async (patient) => {
-          const { ...patientWithoutImage } = patient;
-          
-          // Preparar promesas para datos adicionales
-          const promises: Promise<any>[] = [];
-          
-          if (includeHealthData) {
-            promises.push(this.healthRepository.getLatestVitals(patient.id));
-          }
-          
-          if (includeMedicalInfo) {
-            promises.push(this.medicalInfoRepository.getAllMedicalInfo(patient.id));
-          }
-
-          // Ejecutar consultas en paralelo
-          const results = await Promise.all(promises);
-          
-          let latestVitals = null;
-          let medicalInfo = null;
-          
-          if (includeHealthData) {
-            latestVitals = results[0];
-          }
-          
-          if (includeMedicalInfo) {
-            const index = includeHealthData ? 1 : 0;
-            medicalInfo = results[index];
-          }
-
-          // Obtener información de ubicación
-          let cityName = patient.ciudad || "";
-          let departmentName = patient.departamento || "";
-
-          if (patient.city_id) {
-            try {
-              const locationRepository = AppDataSource.getRepository('townships');
-              const cityData = await locationRepository.findOne({
-                where: { id: patient.city_id },
-                relations: ['department']
-              });
-
-              if (cityData) {
-                cityName = cityData.name;
-                if (cityData.department) {
-                  departmentName = cityData.department.name;
-                }
-              }
-            } catch (error) {
-              logger.error('Error al obtener información de localización:', error);
-            }
-          }
-
-          // Construir objeto de respuesta
-          const enrichedPatient: any = {
-            ...patientWithoutImage,
-            ciudad: cityName,
-            department_name: departmentName,
-          };
-
-          // Añadir datos de salud si se solicitaron
-          if (includeHealthData || includeMedicalInfo) {
-            enrichedPatient.health_data = {};
-            
-            if (includeHealthData) {
-              enrichedPatient.health_data.vitals = latestVitals;
-            }
-            
-            if (includeMedicalInfo) {
-              enrichedPatient.health_data.medical_info = medicalInfo;
-            }
-          }
-
-          return enrichedPatient;
-        })
-      );
-
-      return enrichedPatients;
-    }
-
-    // Retornar solo datos básicos
-    return cared_persons;
-  }
 
   /**
    * Refrescar token de acceso usando un refresh token

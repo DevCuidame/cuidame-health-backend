@@ -7,6 +7,7 @@ build/
 
 # Archivos de entorno
 .env
+firebase.json
 .env.local
 .env.*.local
 

@@ -32,6 +32,32 @@ export class CodeController {
 
 
    /**
+   * Verifica si un código está en uso
+   * @route GET /api/code/check/:code
+   */
+  checkCodeInUse = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { code } = req.params;
+      const isInUse = await this.codeService.isCodeInUse(code);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          code,
+          inUse: isInUse,
+          available: !isInUse
+        },
+        message: isInUse ? 'El código está en uso' : 'El código está disponible',
+        timestamp: new Date().toISOString(),
+      };
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * Autentica un código de banda para un paciente
    * @route POST /api/code/authenticate
    */

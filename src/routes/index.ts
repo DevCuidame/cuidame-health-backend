@@ -13,6 +13,7 @@ import codeRoutes from '../modules/code/code.routes';
 import vitalsRoutes from '../modules/vitals/vitals.routes';
 import contactRoutes from '../modules/contact/contact.routes';
 import healthDataRoutes from '../modules/health/health-data.routes';
+import firebasePushRoutes from '../modules/firebase-push-notificactions/routes/firebase-push.routes';
 
 import healthProfessionalRoutes from '../modules/appointment/routes/health-professional.routes';
 import appointmentTypeRoutes from '../modules/appointment/routes/appointment-type.routes';
@@ -35,6 +36,7 @@ import {
   notificationRoutes,
   adminNotificationRoutes,
 } from '../modules/notification/notification.routes';
+import whatsAppRoutes from '../modules/whatsapp/whatsapp.routes';
 
 const router = Router();
 
@@ -71,6 +73,12 @@ router.use('/questionnaires', questionnaireRoutes);
 // Rutas de notificación actualizadas
 router.use('/notifications', notificationRoutes);
 router.use('/admin/notifications', adminNotificationRoutes);
+
+// Rutas de WhatsApp
+router.use('/whatsapp', whatsAppRoutes);
+
+// Rutas de Firebase Push Notifications
+router.use('/firebase-push', firebasePushRoutes);
 
 router.use('/', vitalsRoutes);
 

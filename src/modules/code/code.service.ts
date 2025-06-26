@@ -95,6 +95,41 @@ export class CodeService {
   }
 
   /**
+   * Verifica si un código está en uso en las tablas pacientes o mascotas
+   * @param code Código a verificar
+   * @returns true si el código está en uso, false si está disponible
+   */
+  async isCodeInUse(code: string): Promise<boolean> {
+    // Verificar en tabla pacientes
+    const patientResult = await AppDataSource.query(
+      `
+      SELECT 1
+      FROM pacientes
+      WHERE code = $1
+      LIMIT 1;
+      `,
+      [code]
+    );
+
+    if (patientResult.length > 0) {
+      return true;
+    }
+
+    // Verificar en tabla mascotas
+    const petResult = await AppDataSource.query(
+      `
+      SELECT 1
+      FROM mascotas
+      WHERE hashcode = $1
+      LIMIT 1;
+      `,
+      [code]
+    );
+
+    return petResult.length > 0;
+  }
+
+  /**
    * Verifica si un código tiene un acuerdo válido
    * @param code Código a verificar
    * @returns Información sobre el acuerdo

@@ -53,6 +53,10 @@ interface Config {
     maxPayload: number;
     enableCompression: boolean;
   };
+  whatsapp: {
+    accessToken: string;
+    phoneNumberId: string;
+  };
 }
 
 // Configuración por defecto
@@ -104,6 +108,10 @@ const config: Config = {
     connectionTimeout: parseInt(process.env.WS_CONNECTION_TIMEOUT || '10000', 10),
     maxPayload: parseInt(process.env.WS_MAX_PAYLOAD || '1048576', 10), // 1MB
     enableCompression: process.env.WS_ENABLE_COMPRESSION !== 'false',
+  },
+  whatsapp: {
+    accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
   },
 };
 

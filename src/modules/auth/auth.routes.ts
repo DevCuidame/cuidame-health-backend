@@ -31,22 +31,6 @@ router.post('/register', validateDto(RegisterDto), authController.register);
 router.post('/refresh-token', authController.refreshToken);
 
 /**
- * @route GET /api/auth/cared-patients
- * @desc Get enriched data of patients under user's care
- * @access Private
- * @query includeHealth - Include health data (default: true)
- * @query includeMedical - Include medical info (default: true)
- */
-router.get('/cared-patients', authMiddleware, authController.getCaredPatients);
-
-/**
- * @route GET /api/auth/cared-patients/basic
- * @desc Get basic data of patients under user's care (no medical data)
- * @access Private
- */
-router.get('/cared-patients/basic', authMiddleware, authController.getCaredPatientsBasic);
-
-/**
  * @route POST /api/auth/forgot-password
  * @desc Request password reset
  * @access Public

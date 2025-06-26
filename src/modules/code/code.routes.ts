@@ -18,7 +18,14 @@ const controller = new CodeController();
 router.get('/agreements', controller.getAgreements);
 
 /**
- * @route GET /api/code/authenticate
+ * @route GET /api/code/check/:code
+ * @desc Check if code is in use
+ * @access Private
+ */
+router.get('/check/:code', controller.checkCodeInUse);
+
+/**
+ * @route POST /api/code/authenticate
  * @desc Auth Code
  * @access Private
  */

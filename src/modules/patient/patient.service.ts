@@ -21,6 +21,8 @@ import { MultiChannelNotificationService } from '../notification/services/multi-
 import { ContactService } from '../contact/contact.service';
 import { NotificationType } from '../../models/notification.model';
 import { CreateMultiChannelNotificationDto } from '../notification/notification.interface';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
+import { UserRepository } from '../user/user.repository';
 
 export class PatientService {
   private patientRepository: PatientRepository;
@@ -29,6 +31,8 @@ export class PatientService {
   private codeRepository: CodeRepository;
   private notificationService: MultiChannelNotificationService;
   private contactService: ContactService;
+  private whatsAppService: WhatsAppService;
+  private userRepository: UserRepository;
 
   constructor() {
     this.patientRepository = new PatientRepository();
@@ -37,6 +41,8 @@ export class PatientService {
     this.notificationService = new MultiChannelNotificationService();
     this.contactService = new ContactService();
     this.codeRepository = new CodeRepository();
+    this.whatsAppService = new WhatsAppService();
+    this.userRepository = new UserRepository();
   }
 
   /**
@@ -722,6 +728,26 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
 
       // 1. Enviar notificación al cuidador
       if (patient.a_cargo_id) {
+        // Obtener información del cuidador
+        const caregiver = await this.userRepository.findById(patient.a_cargo_id);
+        
+        // Enviar notificación específica de WhatsApp con plantilla
+        if (caregiver && caregiver.phone) {
+          try {
+            await this.whatsAppService.sendQRScanNotification(
+              caregiver.phone,
+              `${caregiver.name} ${caregiver.lastname}`,
+              `${patient.nombre} ${patient.apellido}`,
+              location.latitude,
+              location.longitude
+            );
+            console.log(`✅ Notificación de WhatsApp enviada al cuidador: ${caregiver.phone}`);
+          } catch (whatsappError) {
+            console.error('❌ Error enviando notificación de WhatsApp al cuidador:', whatsappError);
+          }
+        }
+
+        // Enviar notificación multicanal tradicional
         const caregiverNotification: CreateMultiChannelNotificationDto = {
           user_id: patient.a_cargo_id,
           type: NotificationType.QR_SCAN_ALERT,
@@ -730,14 +756,14 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
           channels: {
             email: true,
             sms: true,
-            whatsapp: true,
+            whatsapp: false, // Deshabilitamos WhatsApp aquí porque ya lo enviamos con la plantilla específica
             push: true,
             inapp: true
           }
         };
 
         await this.notificationService.sendMultiChannelNotification(caregiverNotification);
-        console.log(`✅ Notificación enviada al cuidador (ID: ${patient.a_cargo_id})`);
+        console.log(`✅ Notificación multicanal enviada al cuidador (ID: ${patient.a_cargo_id})`);
       }
 
       // 2. Enviar notificaciones a contactos de emergencia
@@ -753,14 +779,28 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
 
           for (const contact of contacts) {
             try {
-              // Mensaje personalizado para contacto de emergencia
+              // Enviar notificación específica de WhatsApp con plantilla
+              try {
+                await this.whatsAppService.sendQRScanNotification(
+                  contact.phone || '',
+                  contact.name || '',
+                  `${patient.nombre} ${patient.apellido}`,
+                  location.latitude,
+                  location.longitude
+                );
+                console.log(`✅ Notificación de WhatsApp enviada al contacto: ${contact.name} (${contact.phone})`);
+              } catch (whatsappError) {
+                console.error(`❌ Error enviando WhatsApp a contacto ${contact.name}:`, whatsappError);
+              }
+
+              // Mensaje personalizado para contacto de emergencia (SMS)
               const contactMessage = `🚨 ALERTA DE EMERGENCIA\n\n` +
                 `Hola ${contact.name}, el código QR de ${patient.nombre} ${patient.apellido} ha sido escaneado.\n\n` +
                 `📍 Ubicación: ${googleMapsUrl}\n` +
                 `🕐 Fecha y hora: ${scanTime}\n\n` +
                 `Por favor, verifique el estado de esta persona inmediatamente.`;
 
-              // Crear notificación temporal para el contacto (usando SMS y WhatsApp)
+              // Crear notificación para SMS (sin WhatsApp porque ya se envió con plantilla)
               const contactNotification: CreateMultiChannelNotificationDto = {
                 user_id: patient.a_cargo_id, // Usamos el ID del cuidador como referencia
                 type: NotificationType.QR_SCAN_ALERT,
@@ -771,14 +811,14 @@ async getPatientsByCaregiver(caregiverId: number): Promise<Patient[]> {
                 channels: {
                   email: false,
                   sms: true,
-                  whatsapp: true,
+                  whatsapp: false, // Deshabilitado porque ya se envió con plantilla específica
                   push: false,
                   inapp: false
                 }
               };
 
               await this.notificationService.sendMultiChannelNotification(contactNotification);
-              console.log(`✅ Notificación enviada al contacto de emergencia: ${contact.name} (${contact.phone})`);
+              console.log(`✅ Notificación SMS enviada al contacto de emergencia: ${contact.name} (${contact.phone})`);
               
             } catch (contactError) {
               console.error(`❌ Error enviando notificación a contacto ${contact.name}:`, contactError);
